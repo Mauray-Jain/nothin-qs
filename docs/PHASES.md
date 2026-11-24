@@ -28,3 +28,48 @@ build/nothin run --dev .      # in a terminal, next to DMS
 - [ ] `build/nothin restart` prints "restarting qs" and a new pid
 - [ ] `pkill -x qs` three times quickly → nothin exits with "giving up"
 - [ ] `build/nothin kill` stops nothin and `pgrep -x qs` finds no nothin qs
+
+## 1.1 Config daemon
+
+Done when: editing the TOML changes a test label live; a syntax error shows a toast and
+keeps the old value; a UI write keeps comments.
+
+Risk from PLAN.md §5 resolved: go-toml/v2's `unstable` parser gives byte ranges for every
+`key = value`, so saves replace just that span (`internal/config/patch.go`). No line-based
+fallback needed.
+
+How it fits together:
+- `nothin run` owns `~/.config/nothin/config.toml` (writes `config.Starter` if missing) and
+  serves JSON lines on `$XDG_RUNTIME_DIR/nothin/nothin.sock`, passed to qs as `NOTHIN_SOCKET`.
+- Out: `{"type":"config","config":{…}}`, `{"type":"error","error":"config.toml line 3: …"}`.
+  In: `{"type":"set","path":"general.name","value":"ada"}`.
+- The file watch debounces 50 ms and ignores contents it has already seen, which covers
+  its own writes. A broken file keeps the last good config; saves are refused until fixed.
+- QML: `services/Daemon.qml` is the socket; `core/Config.qml` is a plain singleton
+  (`values`, `loaded`, `set()`, `failed`), so it runs under `qmltestrunner`. Surfaces load
+  only after the first config, so `Theme` fallbacks never show.
+- `core/qmldir` is handwritten (Quickshell honours it, see `src/core/scan.cpp`) so the
+  same singletons work in Quickshell and in `qmltestrunner`. Imports are relative.
+
+Automated: `go test ./...` (load errors with line numbers, patch fixtures in
+`internal/config/testdata/patch/`, the example file covering every key, and the hub over a
+real socket and file watch). `qmltestrunner`: Config routing, Theme following config,
+bundled fonts loading.
+
+Checked in the container: the built binary over its real socket (set, hand edit, typo).
+
+Laptop check (**untested on hardware**):
+
+```bash
+build/nothin run --dev .
+build/nothin ipc testpage toggle      # page appears on every screen
+build/nothin ipc testpage name        # prints general.name
+```
+
+- [ ] Change `name` in `~/.config/nothin/config.toml` and save → the page's "HELLO, …" changes
+      and `nothin ipc testpage name` prints the new value
+- [ ] Break the file (e.g. `name = "x`) → a toast top-right names the line; the page keeps the old name
+- [ ] Fix it → the page updates again
+- [ ] Type a name in the page's field and press Enter → the file changes only on the `name`
+      line; all comments are still there
+- [ ] With the file broken, Enter in the field → toast says to fix the file first

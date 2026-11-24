@@ -1,0 +1,6 @@
+# set theme.accent "#00ff00"
+[general]
+# name = "your-name"
+
+[theme]
+accent = "#00ff00"

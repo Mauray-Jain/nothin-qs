@@ -1,0 +1,6 @@
+# set general.name "bob"
+config_version = 1
+
+[general]
+name = "bob"
+# name = "your-name"

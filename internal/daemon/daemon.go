@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -15,7 +16,7 @@ import (
 	"syscall"
 )
 
-// RuntimeDir holds nothin.pid and qs.pid (and later the socket).
+// RuntimeDir holds nothin.pid, qs.pid and nothin.sock.
 func RuntimeDir() string {
 	if d := os.Getenv("XDG_RUNTIME_DIR"); d != "" {
 		return filepath.Join(d, "nothin")
@@ -82,6 +83,27 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
+	h, err := newHub(ConfigPath())
+	if err != nil {
+		return err
+	}
+	if h.err != "" {
+		fmt.Fprintln(log, "nothin:", h.err)
+	}
+	sock := filepath.Join(RuntimeDir(), "nothin.sock")
+	os.Remove(sock)
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		return err
+	}
+	defer ln.Close()
+	go h.serve(ln)
+	go func() {
+		if err := h.watch(ctx); err != nil {
+			fmt.Fprintln(log, "nothin: config watch:", err)
+		}
+	}()
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -91,7 +113,7 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 		}
 	}()
 
-	env := os.Environ()
+	env := append(os.Environ(), "NOTHIN_SOCKET="+sock)
 	if dev {
 		env = append(env, "NOTHIN_DEV=1")
 	}

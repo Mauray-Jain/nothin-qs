@@ -1,0 +1,4 @@
+# set config_version 1
+config_version = 1
+[general]
+name = "ada"

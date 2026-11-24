@@ -1,0 +1,6 @@
+# set general.compositor "niri"
+[general]
+name = "ada"
+
+[theme]
+accent = "#ffffff"

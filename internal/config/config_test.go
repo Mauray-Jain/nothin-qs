@@ -1,0 +1,132 @@
+package config
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
+	"testing"
+)
+
+func TestLoad(t *testing.T) {
+	tests := []struct {
+		name     string
+		doc      string
+		wantLine int    // 0 means no error
+		wantErr  string // substring of the error
+		check    func(Config) bool
+	}{
+		{name: "empty uses defaults", doc: "",
+			check: func(c Config) bool { return c == Defaults() }},
+		{name: "starter file loads", doc: Starter,
+			check: func(c Config) bool { return c == Defaults() }},
+		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
+			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},
+		{name: "syntax error", doc: "[general]\nname = \"ada\n", wantLine: 2},
+		{name: "unknown key", doc: "[general]\n\nnmae = \"ada\"\n", wantLine: 3, wantErr: "nmae"},
+		{name: "wrong type", doc: "[general]\nname = 3\n", wantLine: 2},
+		{name: "bad colour", doc: "[theme]\naccent = \"red\"\n", wantLine: 2, wantErr: "theme.accent"},
+		{name: "bad compositor", doc: "[general]\ncompositor = \"sway\"\n", wantLine: 2, wantErr: "general.compositor"},
+		{name: "version too new", doc: "config_version = 2\n", wantLine: 1, wantErr: "config_version"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := Load([]byte(tt.doc))
+			if tt.wantLine == 0 {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !tt.check(c) {
+					t.Errorf("unexpected config %+v", c)
+				}
+				return
+			}
+			var le *Error
+			if !errors.As(err, &le) {
+				t.Fatalf("want *Error, got %v", err)
+			}
+			if le.Line != tt.wantLine {
+				t.Errorf("line = %d, want %d (%v)", le.Line, tt.wantLine, err)
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error %q does not mention %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// Each testdata/patch/<case>.in.toml is patched with the path and value named
+// in its first line ("# set <path> <json value>") and compared to <case>.out.toml.
+func TestPatch(t *testing.T) {
+	ins, _ := filepath.Glob("testdata/patch/*.in.toml")
+	if len(ins) == 0 {
+		t.Fatal("no fixtures")
+	}
+	for _, in := range ins {
+		name := strings.TrimSuffix(filepath.Base(in), ".in.toml")
+		t.Run(name, func(t *testing.T) {
+			doc, _ := os.ReadFile(in)
+			want, _ := os.ReadFile(strings.Replace(in, ".in.", ".out.", 1))
+			first, _, _ := strings.Cut(string(doc), "\n")
+			f := strings.SplitN(strings.TrimPrefix(first, "# set "), " ", 2)
+			got, err := Patch(doc, f[0], []byte(f[1]))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != string(want) {
+				t.Errorf("got:\n%s\nwant:\n%s", got, want)
+			}
+		})
+	}
+}
+
+func TestPatchRefusesInvalid(t *testing.T) {
+	tests := []struct{ doc, path, value string }{
+		{"[general]\nname = \"ada\n", "general.name", `"bob"`}, // file doesn't parse
+		{"", "theme.accent", `"red"`},                          // value fails validation
+		{"", "general.nope", `"x"`},                            // unknown key
+		{"", "general.name", `{"a":1}`},                        // tables can't be set
+	}
+	for _, tt := range tests {
+		if _, err := Patch([]byte(tt.doc), tt.path, []byte(tt.value)); err == nil {
+			t.Errorf("Patch(%q, %s, %s) succeeded, want error", tt.doc, tt.path, tt.value)
+		}
+	}
+}
+
+// docs/config.example.toml must load, document every key, and show the defaults.
+func TestExampleMatchesDefaults(t *testing.T) {
+	doc, err := os.ReadFile("../../docs/config.example.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != Defaults() {
+		t.Errorf("example values differ from defaults:\n got %+v\nwant %+v", c, Defaults())
+	}
+	for _, k := range keys(reflect.TypeOf(Config{}), nil) {
+		if find(doc, k) == nil {
+			t.Errorf("example does not set %s", strings.Join(k, "."))
+		}
+	}
+}
+
+// keys lists the dotted path of every leaf field, from the toml tags.
+func keys(t reflect.Type, prefix []string) [][]string {
+	var out [][]string
+	for i := range t.NumField() {
+		f := t.Field(i)
+		p := append(slices.Clone(prefix), f.Tag.Get("toml"))
+		if f.Type.Kind() == reflect.Struct {
+			out = append(out, keys(f.Type, p)...)
+		} else {
+			out = append(out, p)
+		}
+	}
+	return out
+}

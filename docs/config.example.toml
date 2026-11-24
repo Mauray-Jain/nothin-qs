@@ -1,0 +1,19 @@
+# nothin settings: ~/.config/nothin/config.toml
+#
+# Every key is optional. This file lists them all with their defaults; copy only
+# the ones you want to change. nothin reloads the file as soon as you save it.
+# If it has an error, nothin keeps the last good settings and shows the line.
+
+# Schema version. nothin migrates older files; leave it as is.
+config_version = 1
+
+[general]
+# Shown in the greeting.
+name = ""
+# Which compositor to talk to: "auto" (detect) or "niri".
+compositor = "auto"
+
+[theme]
+# Used only for active dots, play, errors and pen ink.
+accent = "#d71921"
+background = "#000000"

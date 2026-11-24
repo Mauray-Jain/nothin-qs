@@ -1,0 +1,3 @@
+# set general.name "say \"hi\""
+[general]
+name = "say \"hi\""
