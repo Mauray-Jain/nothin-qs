@@ -43,6 +43,7 @@ Anything else goes in a folder. Adding a new top-level file or folder needs a re
 - No `pkg/`, `utils/`, `common/`, `helpers/` or `misc/` grab-bags. A helper lives in the package that uses it. If two packages need it, it gets a package named for what it does.
 - A package or folder name says what it is. Files are named for their main type or purpose.
 - Go tests (`*_test.go`) sit next to the code they test. Test fixtures go in that package's `testdata/`.
+- QML tests (`tst_*.qml`) go in a `tests/` folder inside the area they test (e.g. `shell/components/tests/`). This is the one allowed extra sub-folder per area.
 - One QML component per file. A surface that grows past one file gets its own folder under `shell/modules/`.
 - Generated or build output (`build/`, compiled binaries) is never committed and never lands in the root.
 - Keep nesting shallow. Add a sub-folder only when a folder has several files that clearly form a group.
@@ -73,11 +74,27 @@ costs in weight and maintenance. Say why in the commit message. Expected set: `g
 - Commit to `main` at the end of each phase without asking, and tag each milestone (`m1`, `m2`, …).
 - Never push unless the user asks.
 
-## Testing
+## Test first, then implement
 
-- Write Go unit tests where bugs would be silent: config loading, in-place TOML patching,
-  migrations, niri bind parsing.
-- QML has no test framework. Verify by running `nothin run --dev .` and taking screenshots.
+Every change starts with a test or check that fails, then the code that makes it pass.
+
+- **Go.** Red-green.
+  1. Write a failing `*_test.go`.
+  2. Run it and watch it fail.
+  3. Implement until it passes.
+
+  No production code without a failing test that asks for it. Prefer small table-driven tests, with fixtures in `testdata/`.
+- **Pure QML and JS.** This covers components such as DotText and DotRing, layout math and formatters. Write a Qt Quick Test `tst_*.qml` first, then the component.
+- **Wayland surfaces** (rail, lock, desktop…). These can't run under `qmltestrunner`.
+  1. Before coding, write the phase's acceptance check in the phase notes: a `nothin ipc` state query where one exists, otherwise a screenshot checklist.
+  2. Implement.
+  3. Run the check.
+- **Keep tests simple.** Tests are as simple as the code they test; Occam's razor applies to them too. No mocks of Quickshell types, and no test tools beyond `go test` and `qmltestrunner`.
+
+```bash
+go test ./...
+/usr/lib/qt6/bin/qmltestrunner -input shell/
+```
 
 ## Running (planned, see docs/PLAN.md 1.0)
 
@@ -88,8 +105,9 @@ build/nothin kill
 build/nothin ipc <target> <fn> [args]
 ```
 
-While DMS is still running, keep nothin's notification server, polkit agent and lock disabled
-under `--dev` (one of each per session).
+While DMS is still running, keep nothin's notification server and polkit agent disabled under
+`--dev`. Only one of each can exist per session, and a nested niri shares the session D-Bus.
+To test them, run `dms kill`, test nothin, then `dms run`. Lock work goes in a nested niri.
 
 ## Safety
 

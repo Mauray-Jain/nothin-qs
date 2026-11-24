@@ -28,14 +28,14 @@ the plainest version that meets its "done when" line.
 | 13 | Colours | Fixed monochrome by default, matugen (wallpaper colours) as an option, background colour configurable. App theming deferred |
 | 14 | Wallpaper | The shell draws it (needed for halftone). Folder is a setting |
 | 15/20 | CLI | `nothin`: `run [--dev DIR]`, `restart`, `kill`, `ipc <target> <fn> [args]`, `doctor`, `setup`, `keybinds` |
-| 16/24/26 | Go | The `nothin` CLI is Go. `nothin run` stays alive as the parent of `qs`, owns `config.toml`, and serves the shell over a Unix socket. QML is embedded with `go:embed` for installs; `--dev` loads the repo directly for live reload |
+| 16/24/26 | Go | The `nothin` CLI is Go. `nothin run` stays alive as the parent of `qs`, owns `config.toml`, and serves the shell over a Unix socket. If `qs` crashes it is restarted; after 3 crashes within 10 seconds it gives up. Logs go to `~/.local/state/nothin/nothin.log`. QML is embedded with `go:embed` for installs; `--dev` loads the repo directly for live reload |
 | 17 | Config file | One file: `~/.config/nothin/config.toml`. Only non-default values are written. The first run writes a short commented starter file. `config.example.toml` in the repo documents everything (lives in `docs/`) |
 | 18 | Reload and errors | Hot reload (~50ms debounce), self-writes ignored, parse error → keep last good config + toast with line number + refuse to save. `config_version` plus migrations |
 | 19 | State | Runtime data (notification history, launcher usage, recents) goes in `~/.local/state/nothin/`, not the TOML |
-| 25 | Comments | Saves patch values in place so hand-written comments and order survive |
 | 21 | DMS parity | Launcher, clipboard (cliphist), process list, notification center, OSDs and polkit agent, all in the dot style |
 | 22/34 | Keybinds | Noctalia mentality: nothin never writes binds. `nothin setup` / `nothin keybinds` lists nothin's actions with suggested keys, marks which are free or taken in your niri config, and prints a snippet to paste. The README carries the same list |
 | 23 | Compositors | niri only in v1, behind a compositor interface. More (Hyprland first) in v2 |
+| 25 | Comments | Saves patch values in place so hand-written comments and order survive |
 | 27/38 | niri settings | `config.toml` is the source of truth. DISPLAY is applied live via `niri msg output` (at start, on hotplug, after a niri config reload). WINDOWS/INPUT values generate `~/.config/niri/nothin.kdl`, which the user includes manually if they want it (Noctalia style); otherwise those pages are read-only |
 | 28 | App theming | Deferred (kitty/GTK/Qt) |
 | 29 | Launcher | Apps (frecency), calculator, windows, emoji, files, web search |
@@ -49,9 +49,11 @@ the plainest version that meets its "done when" line.
 | 42 | Fonts | Space Mono and Space Grotesk (OFL) bundled in `shell/assets/fonts/`, loaded with `FontLoader` |
 | 43 | Icons | Material Symbols variable font (Apache 2.0) at weight 300, bundled. Dot-matrix icons only where the video uses them |
 | 44 | Module path | `github.com/Mauray-Jain/nothin-qs`; binary `nothin` |
-| 45 | Git | `git init` in 1.0. Commit at the end of each phase on `main`, tag each milestone (`m1`, `m2`, …). Push only when asked |
-| 46 | Tests | Go unit tests for config load, TOML patching, migrations and niri bind parsing. QML checked by running it and taking screenshots |
+| 45 | Git | Repo created (public, `Mauray-Jain/nothin-qs`). Commit at the end of each phase on `main`, tag each milestone (`m1`, `m2`, …). Push only when asked |
+| 46 | Tests | Go: unit tests, especially config load, TOML patching, migrations and niri bind parsing. Pure QML components and JS logic: Qt Quick Test via `qmltestrunner`. Wayland surfaces: an acceptance check (IPC query or screenshot checklist) |
 | 47 | Dependencies | Standard library by default. Add a package only when it clearly simplifies the code more than it costs (expected: `go-toml/v2`, `fsnotify`, `godbus/dbus`) |
+| 48 | System tray | Monochrome tray icons in the rail, with their menus (Quickshell `SystemTray`). Milestone 1 |
+| 49 | Test first | Write the test (or acceptance check) before the code, in every phase. Details in CLAUDE.md |
 
 ---
 
@@ -152,7 +154,7 @@ lock = 180
 screen_off = 300
 suspend = 840
 
-[display.outputs."eDP-1"]
+[display.monitors."eDP-1"]
 scale = 1.0
 
 [niri]                   # only used if you include ~/.config/niri/nothin.kdl
@@ -164,25 +166,27 @@ border_width = 1
 
 ## 4. Milestones
 
-Each phase ends with something runnable. Run the review skills listed in
-`CLAUDE.local.md` (repo root) at the end of every milestone.
+Each phase ends with something runnable. Each phase starts by writing its tests or acceptance
+check (decision #49). Run the review skills listed in `CLAUDE.local.md` (repo root) at the end of
+every milestone.
 
 ### Milestone 1: daily driver (replaces DMS)
 
 | Phase | Work | Done when |
 |---|---|---|
-| 1.0 | **Scaffold**: git init, go module, `nothin run --dev/kill/restart/ipc`, empty `shell.qml`, fonts (Space Mono, Space Grotesk) | `nothin run --dev .` shows an empty shell next to DMS; `nothin kill` stops it |
+| 1.0 | **Scaffold**: go module, `nothin run --dev/kill/restart/ipc` (with qs restart policy and log), empty `shell.qml`, bundled fonts (Space Mono, Space Grotesk, Material Symbols), README, LICENSE | `nothin run --dev .` shows an empty shell next to DMS; `nothin kill` stops it |
 | 1.1 | **Config daemon**: defaults, TOML load, hot reload, error handling, in-place patch writes, socket, QML `Config` singleton, starter file | Editing the TOML changes a test label live; a syntax error shows a toast and keeps the old value; a UI write keeps comments |
 | 1.2 | **Design kit**: Theme, DotText + glyphs, DotRing, DotSpark, Card/Pill/Segmented/Toggle/Knob, Halftone shader | A test page renders `16:55`, a 70% ring and a halftoned image |
-| 1.3 | **Compositor layer**: detection, niri backend (workspaces, windows, outputs, focus) | Workspace and focus changes log correctly on both screens |
-| 1.4 | **Rail**: workspace dots, mini clock, status icons, caffeine, power | Rail on every monitor; clicking dots switches workspaces |
+| 1.3 | **Compositor layer**: detection, niri backend (workspaces, windows, outputs, focus) | Workspace and focus changes log correctly on every connected output |
+| 1.4 | **Rail**: workspace dots, mini clock, status icons, system tray, caffeine, power | Rail on every monitor; clicking dots switches workspaces; tray icons open their menus |
 | 1.5 | **Wallpaper**: shared and per-monitor, halftone effect | Wallpaper renders as dots; effect settings apply live |
-| 1.6 | **Desktop home**: hero clock, greeting, bento grid (weather, calendar, player, system), free mode | Matches the video's home frames; widgets chosen from config |
-| 1.7 | **Notifications + center + OSD** (volume, brightness, media IPC) | DMS notifications and OSD can be turned off |
-| 1.8 | **Launcher + clipboard** (apps, calc, windows, emoji, files, web; cliphist) | Mod+P and Mod+Shift+C equivalents work |
-| 1.9 | **Lock, idle, polkit, D-Bus** (nested-niri first) | Locks and unlocks, idle timers fire, lock before suspend, polkit prompts appear |
-| 1.10 | **Settings deck, minimal**: nav + HOME, LOOK, IDLE | Changing a setting in the UI updates the TOML and the shell |
-| 1.11 | **Setup + switch-over**: `nothin setup`, `nothin doctor`, keybind suggestions, README | Startup line is `nothin run`; DMS no longer spawned |
+| 1.6 | **Desktop home**: hero clock, greeting, bento grid (weather, calendar, player, system), free mode | A side-by-side screenshot with the reference frame, reviewed by the user; widgets chosen from config; free mode renders positions from config |
+| 1.7 | **Notifications + center + OSD** (volume, brightness, media IPC). Test with `dms kill` … `dms run` | nothin's notifications and OSD work with DMS stopped |
+| 1.8 | **Launcher core + clipboard**: apps (frecency), calculator, windows; cliphist | Mod+P and Mod+Shift+C equivalents work |
+| 1.9 | **Launcher extras**: emoji, files, web search | Each mode is reachable from the launcher |
+| 1.10 | **Lock, idle, polkit, D-Bus**. Lock in a nested niri first; polkit tested with DMS stopped | Locks and unlocks, idle timers fire, lock before suspend, polkit prompts appear |
+| 1.11 | **Settings deck, minimal**: nav + HOME (incl. drag-to-place for free mode), LOOK, IDLE | Changing a setting in the UI updates the TOML and the shell |
+| 1.12 | **Setup + switch-over**: `nothin setup`, `nothin doctor`, keybind suggestions, README | Startup line is `nothin run`; DMS no longer spawned |
 
 ### Milestone 2: the rest of the video
 
@@ -207,6 +211,10 @@ Hyprland backend, app theming (kitty, GTK, Qt), keybind editor, light mode.
 - **Halftone cost**: render once into a texture and redraw only on change.
 - **Desktop layer input**: mask the background window to widget rects so it doesn't eat clicks.
 - **Lock crashes**: niri keeps the session locked (red screen). Nested niri and a TTY fallback.
-- **Two shells during development**: only one notification server, polkit agent and lock can
-  exist. Keep those off under `--dev` until phase 1.7 / 1.9 switch them on explicitly.
+- **Two shells during development**: only one notification server and one polkit agent can exist
+  per session. They sit on the shared session D-Bus, so a nested niri doesn't isolate them. Keep them
+  off under `--dev`, and test them by running `dms kill`, testing nothin, then `dms run`. The lock is
+  per compositor, so it does go in a nested niri.
+- **Multi-monitor**: this laptop has one output (eDP-1). Multi-monitor behaviour can only be verified
+  with an external monitor plugged in. Until then, phase notes mark it "untested" rather than "done".
 - **Licence**: rebuild the look; don't copy code from "glyph" unless its licence allows.
