@@ -19,7 +19,10 @@ import (
 const usage = `usage: nothin <command> [args]
 
 commands:
-  run [--dev DIR]          start the shell (DIR: repo checkout, live-reloads QML)
+  run [--dev DIR] [--notifications]
+                           start the shell (DIR: repo checkout, live-reloads QML).
+                           Under --dev the notification server is off (DMS has it)
+                           unless --notifications is given
   restart                  restart qs under the running daemon
   kill                     stop nothin and the shell
   ipc <target> <fn> [args] call an IpcHandler in the shell
@@ -60,24 +63,35 @@ func Main(args []string, stderr io.Writer) int {
 }
 
 func run(args []string, stderr io.Writer) error {
-	fl := flag.NewFlagSet("run", flag.ContinueOnError)
-	fl.SetOutput(stderr)
-	dev := fl.String("dev", "", "load QML from `DIR`/shell instead of the embedded copy")
-	if err := fl.Parse(args); err != nil {
+	dev, notifications, err := runFlags(args, stderr)
+	if err != nil {
 		return err
 	}
 	shellDir := ""
-	if *dev != "" {
-		abs, err := filepath.Abs(filepath.Join(*dev, "shell"))
+	if dev != "" {
+		abs, err := filepath.Abs(filepath.Join(dev, "shell"))
 		if err != nil {
 			return err
 		}
 		if _, err := os.Stat(filepath.Join(abs, "shell.qml")); err != nil {
-			return fmt.Errorf("--dev %s: no shell/shell.qml there", *dev)
+			return fmt.Errorf("--dev %s: no shell/shell.qml there", dev)
 		}
 		shellDir = abs
 	}
-	return daemon.Run(shellDir, shell.FS, *dev != "", stderr)
+	return daemon.Run(shellDir, shell.FS, dev != "", notifications, stderr)
+}
+
+// runFlags parses `run` flags. The notification server is on unless --dev is
+// given without --notifications: only one can exist per session.
+func runFlags(args []string, stderr io.Writer) (dev string, notifications bool, err error) {
+	fl := flag.NewFlagSet("run", flag.ContinueOnError)
+	fl.SetOutput(stderr)
+	fl.StringVar(&dev, "dev", "", "load QML from `DIR`/shell instead of the embedded copy")
+	n := fl.Bool("notifications", false, "with --dev: run the notification server too (stop DMS first)")
+	if err := fl.Parse(args); err != nil {
+		return "", false, err
+	}
+	return dev, dev == "" || *n, nil
 }
 
 func signalDaemon(sig syscall.Signal) error {

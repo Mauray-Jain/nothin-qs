@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Mauray-Jain/nothin-qs/internal/backlight"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
 	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
@@ -58,7 +59,7 @@ func writePID(name string, pid int) error {
 
 // Run supervises qs on shellDir until SIGINT or SIGTERM. SIGHUP restarts qs.
 // If shellDir is empty, the embedded shell is extracted and used.
-func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
+func Run(shellDir string, embedded fs.FS, dev, notifications bool, stderr io.Writer) error {
 	if pid, err := ReadPID("nothin.pid"); err == nil {
 		return fmt.Errorf("nothin is already running (pid %d)", pid)
 	}
@@ -113,6 +114,7 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 	go followCompositor(ctx, h, log)
 	go sampleSystem(ctx, h)
 	go followWeather(ctx, h, log)
+	go followBacklight(ctx, h)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -125,6 +127,9 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 	env := append(os.Environ(), "NOTHIN_SOCKET="+sock)
 	if dev {
 		env = append(env, "NOTHIN_DEV=1")
+	}
+	if notifications {
+		env = append(env, "NOTHIN_NOTIFICATIONS=1")
 	}
 	start := func() *exec.Cmd {
 		cmd := exec.Command("qs", "-p", shellDir)
@@ -213,6 +218,25 @@ func followWeather(ctx context.Context, h *hub, log io.Writer) {
 				next, lastErr = time.Now().Add(15*time.Minute), ""
 				h.publish("weather", map[string]any{"type": "weather", "weather": w})
 			}
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}
+
+// followBacklight publishes the screen brightness (0..1) whenever it changes,
+// checking 4 times a second: sysfs sends no file events.
+func followBacklight(ctx context.Context, h *hub) {
+	last := -1.0
+	t := time.NewTicker(250 * time.Millisecond)
+	defer t.Stop()
+	for {
+		if v, err := backlight.Read("/"); err == nil && v != last {
+			last = v
+			h.publish("brightness", map[string]any{"type": "brightness", "brightness": v})
 		}
 		select {
 		case <-ctx.Done():

@@ -31,3 +31,21 @@ func TestQsIPCArgs(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+func TestRunFlags(t *testing.T) {
+	tests := []struct {
+		args          []string
+		dev           string
+		notifications bool
+	}{
+		{nil, "", true},                      // installed: always the notification server
+		{[]string{"--dev", "."}, ".", false}, // next to DMS: off by default
+		{[]string{"--dev", ".", "--notifications"}, ".", true},
+	}
+	for _, tt := range tests {
+		dev, notif, err := runFlags(tt.args, io.Discard)
+		if err != nil || dev != tt.dev || notif != tt.notifications {
+			t.Errorf("runFlags(%q) = %q, %v, %v", tt.args, dev, notif, err)
+		}
+	}
+}
