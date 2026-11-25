@@ -320,3 +320,74 @@ Laptop check (**untested on hardware**):
       windows cover the widgets
 - [ ] The widgets don't sit under the rail
 - [ ] Send a screenshot next to a frame of the video for the side-by-side review
+
+## 1.7 Notifications, center, OSD
+
+Done when: nothin's notifications and OSD work with DMS stopped.
+
+How it fits together:
+- Only one notification server can exist per session. `nothin run` always runs it;
+  `nothin run --dev` runs it only with `--notifications` (the shell sees
+  `NOTHIN_NOTIFICATIONS=1`). Stop DMS first: `dms kill`.
+- `modules/notifications/Notifications.qml`: the server, up to 4 popups top-right on the
+  focused monitor, and a center on the right listing everything since start (clear,
+  close). `Notifs` singleton holds the list and unread count; the rail's bell turns red
+  with a count and opens the center.
+- `modules/osd/OsdWindow.qml`: volume (any change, from anywhere) and brightness levels
+  as a dot bar near the bottom of the focused monitor. Brightness is set with
+  `brightnessctl` (user decision) and read by the daemon from /sys/class/backlight 4×/s,
+  since sysfs sends no file events; hardware brightness keys show the OSD too.
+- IPC targets for keybinds: `volume up|down|mute`, `brightness up|down`,
+  `media playPause|next|previous`, `notifications toggle|clear`.
+- The error toast now follows the focused monitor (`Compositor.focusedScreen`).
+
+Decided unattended (change any of these by asking):
+- Popups: up to 4, newest on top; 5 s unless the app sets a timeout; critical ones stay
+  until closed. A popup timing out leaves the notification in the center. New ones don't
+  pop up while the center is open.
+- The center keeps notifications only while nothin runs (not saved to disk yet).
+- No do-not-disturb mode yet.
+- Volume and brightness steps are 5%. Volume up/down also unmutes.
+- With `acpi_video*` and another backlight present, the other one is read.
+
+Automated: `go test ./...` (the `--notifications` rule, backlight reading incl. device
+choice). `qmltestrunner`: Notifs (order, unread, center, clear), Osd show/hide, Brightness
+feed and steps (only changes after the first reading show the OSD), DotBar, popup
+timeouts, NotificationCard (content, action buttons, close), `Compositor.focusedScreen`.
+
+Checked in the container: a screenshot of two notification cards and the OSD bar. It
+caught action pills that were invisible on the card, now fixed.
+
+Laptop check (**untested on hardware**). Add your keybinds first (nothin never writes
+them), e.g. in niri's `binds {}`:
+
+```kdl
+XF86AudioRaiseVolume  allow-when-locked=true { spawn "nothin" "ipc" "volume" "up"; }
+XF86AudioLowerVolume  allow-when-locked=true { spawn "nothin" "ipc" "volume" "down"; }
+XF86AudioMute         allow-when-locked=true { spawn "nothin" "ipc" "volume" "mute"; }
+XF86MonBrightnessUp   allow-when-locked=true { spawn "nothin" "ipc" "brightness" "up"; }
+XF86MonBrightnessDown allow-when-locked=true { spawn "nothin" "ipc" "brightness" "down"; }
+XF86AudioPlay         { spawn "nothin" "ipc" "media" "playPause"; }
+XF86AudioNext         { spawn "nothin" "ipc" "media" "next"; }
+XF86AudioPrev         { spawn "nothin" "ipc" "media" "previous"; }
+Mod+N                 { spawn "nothin" "ipc" "notifications" "toggle"; }
+```
+
+```bash
+dms kill
+build/nothin run --dev . --notifications
+notify-send "Hello" "from nothin"
+notify-send -u critical "Battery" "5% left"
+notify-send -t 0 "Sticky" "never expires"
+```
+
+- [ ] Each notification pops up top-right on the focused monitor; normal ones leave after
+      ~5 s, the critical one (red dot) and the sticky one stay until ✕
+- [ ] An app notification with buttons (e.g. a browser download) shows them; they work
+- [ ] The rail bell turns red with "N new"; clicking it opens the center with all of
+      them; CLEAR empties it; the bell goes back to normal
+- [ ] Volume keys (and scrolling on the rail's volume icon) show the volume OSD; mute
+      shows MUTE; brightness keys show the brightness OSD; media keys control the player
+- [ ] Break config.toml → the toast appears on the monitor you're focused on
+- [ ] Without `--notifications` (and with DMS running): DMS still gets the notifications
+- [ ] Afterwards: `build/nothin kill`, then `dms run`

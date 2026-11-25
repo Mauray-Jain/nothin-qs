@@ -74,6 +74,7 @@ Card {
                     required property var modelData
                     objectName: "action-" + modelData.identifier
                     text: modelData.text
+                    color: Theme.surface // the card is surfaceHigh
                     onClicked: modelData.invoke()
                 }
             }
