@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 )
 
 type msg struct {
@@ -120,4 +122,43 @@ func TestHub(t *testing.T) {
 	if m := c.next(); m.Type != "error" {
 		t.Fatalf("set on broken file: %+v", m)
 	}
+}
+
+func TestHubCompositorState(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go h.serve(ln)
+
+	c := dial(t, sock)
+	c.next() // config
+	h.setCompositor(compositor.State{FocusedOutput: "eDP-1"})
+	line := c.raw()
+	if !strings.Contains(line, `"type":"compositor"`) || !strings.Contains(line, `"focused_output":"eDP-1"`) {
+		t.Fatalf("broadcast = %s", line)
+	}
+
+	// A shell that connects later gets the latest state straight away.
+	c2 := dial(t, sock)
+	c2.next() // config
+	if line := c2.raw(); !strings.Contains(line, `"focused_output":"eDP-1"`) {
+		t.Fatalf("late client got %s", line)
+	}
+}
+
+func (c *testClient) raw() string {
+	c.t.Helper()
+	c.conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if !c.r.Scan() {
+		c.t.Fatalf("no message: %v", c.r.Err())
+	}
+	return c.r.Text()
 }

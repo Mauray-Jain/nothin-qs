@@ -13,13 +13,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/config"
 	"github.com/fsnotify/fsnotify"
 )
 
 // hub owns config.toml and talks to the shell over the socket in JSON lines.
 //
-// Out: {"type":"config","config":{…}} and {"type":"error","error":"…"}.
+// Out: {"type":"config","config":{…}}, {"type":"error","error":"…"} and
+// {"type":"compositor","state":{…}}.
 // In:  {"type":"set","path":"theme.accent","value":"#ffffff"}.
 type hub struct {
 	path string
@@ -28,6 +30,7 @@ type hub struct {
 	last    []byte        // file contents last loaded or written
 	good    config.Config // last config that loaded
 	err     string        // current file error, "" if none
+	comp    *compositor.State
 	clients map[net.Conn]bool
 }
 
@@ -93,6 +96,18 @@ func (h *hub) reload() {
 	h.broadcast(h.configMsg())
 }
 
+// setCompositor stores the latest desktop state and sends it to every client.
+func (h *hub) setCompositor(st compositor.State) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.comp = &st
+	h.broadcast(compositorMsg(st))
+}
+
+func compositorMsg(st compositor.State) any {
+	return map[string]any{"type": "compositor", "state": st}
+}
+
 func (h *hub) set(path string, value json.RawMessage) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -141,6 +156,9 @@ func (h *hub) handle(c net.Conn) {
 	first := []any{h.configMsg()}
 	if h.err != "" {
 		first = append(first, errorMsg(h.err))
+	}
+	if h.comp != nil {
+		first = append(first, compositorMsg(*h.comp))
 	}
 	for _, m := range first {
 		line, _ := json.Marshal(m)

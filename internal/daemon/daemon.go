@@ -14,6 +14,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+
+	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
+	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
 )
 
 // RuntimeDir holds nothin.pid, qs.pid and nothin.sock.
@@ -104,6 +107,7 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 			fmt.Fprintln(log, "nothin: config watch:", err)
 		}
 	}()
+	go followCompositor(ctx, h, log)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -132,4 +136,33 @@ func extract(src fs.FS, dir string) error {
 		return err
 	}
 	return os.CopyFS(dir, src)
+}
+
+// followCompositor feeds the compositor's state to the shell and logs one
+// line whenever what it shows changes.
+func followCompositor(ctx context.Context, h *hub, log io.Writer) {
+	h.mu.Lock()
+	setting := h.good.General.Compositor
+	h.mu.Unlock()
+	name, err := compositor.Detect(setting)
+	if err != nil {
+		fmt.Fprintln(log, "nothin:", err)
+		return
+	}
+	if name != "niri" {
+		fmt.Fprintf(log, "nothin: compositor %q is not supported yet (niri only)\n", name)
+		return
+	}
+	fmt.Fprintln(log, "nothin: compositor niri")
+	last := ""
+	err = niri.Niri{}.Run(ctx, func(st compositor.State) {
+		h.setCompositor(st)
+		if line := niri.Summary(st); line != last {
+			fmt.Fprintln(log, "niri:", line)
+			last = line
+		}
+	})
+	if ctx.Err() == nil {
+		fmt.Fprintln(log, "nothin: niri event stream ended:", err)
+	}
 }
