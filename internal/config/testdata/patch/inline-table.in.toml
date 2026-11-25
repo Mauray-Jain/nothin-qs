@@ -1,0 +1,4 @@
+# set desktop.positions {"weather":[0.5,0.1],"player":[0.7,0.45]}
+[desktop]
+layout = "free"
+positions = {} # dragged in the deck

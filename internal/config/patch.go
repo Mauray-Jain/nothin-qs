@@ -172,7 +172,7 @@ func mapKeys(ks []string) []string {
 	return out
 }
 
-// encode turns a JSON scalar or array into TOML value text.
+// encode turns a JSON value into TOML value text; objects become inline tables.
 func encode(value []byte) (string, error) {
 	d := json.NewDecoder(bytes.NewReader(value))
 	d.UseNumber()
@@ -195,6 +195,24 @@ func encodeValue(v any) (string, error) {
 		return v.String(), nil
 	case bool:
 		return fmt.Sprint(v), nil
+	case map[string]any:
+		if len(v) == 0 {
+			return "{}", nil
+		}
+		keys := make([]string, 0, len(v))
+		for k := range v {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		parts := make([]string, len(keys))
+		for i, k := range keys {
+			s, err := encodeValue(v[k])
+			if err != nil {
+				return "", err
+			}
+			parts[i] = bareOrQuoted(k) + " = " + s
+		}
+		return "{ " + strings.Join(parts, ", ") + " }", nil
 	case []any:
 		parts := make([]string, len(v))
 		for i, x := range v {
@@ -206,5 +224,5 @@ func encodeValue(v any) (string, error) {
 		}
 		return "[" + strings.Join(parts, ", ") + "]", nil
 	}
-	return "", errors.New("only strings, numbers, booleans and arrays can be set")
+	return "", errors.New("only strings, numbers, booleans, arrays and tables can be set")
 }
