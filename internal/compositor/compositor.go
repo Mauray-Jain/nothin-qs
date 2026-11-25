@@ -17,6 +17,9 @@ import (
 type Compositor interface {
 	// Run calls update with a fresh State after every change, until ctx ends.
 	Run(ctx context.Context, update func(State)) error
+	FocusWorkspace(id uint64) error
+	ToggleOverview() error
+	Quit() error // log out
 }
 
 // State is what the shell sees, the same for every compositor.

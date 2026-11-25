@@ -154,6 +154,7 @@ func followCompositor(ctx context.Context, h *hub, log io.Writer) {
 		return
 	}
 	fmt.Fprintln(log, "nothin: compositor niri")
+	h.setWM(niri.Niri{})
 	last := ""
 	err = niri.Niri{}.Run(ctx, func(st compositor.State) {
 		h.setCompositor(st)

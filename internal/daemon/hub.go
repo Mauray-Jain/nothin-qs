@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net"
 	"os"
@@ -22,7 +23,10 @@ import (
 //
 // Out: {"type":"config","config":{…}}, {"type":"error","error":"…"} and
 // {"type":"compositor","state":{…}}.
-// In:  {"type":"set","path":"theme.accent","value":"#ffffff"}.
+// In:  {"type":"set","path":"theme.accent","value":"#ffffff"} and
+//
+//	{"type":"action","action":"focus-workspace","id":3} (also
+//	"toggle-overview" and "quit"). A failure comes back as an error.
 type hub struct {
 	path string
 
@@ -31,6 +35,7 @@ type hub struct {
 	good    config.Config // last config that loaded
 	err     string        // current file error, "" if none
 	comp    *compositor.State
+	wm      compositor.Compositor // nil until detected
 	clients map[net.Conn]bool
 }
 
@@ -104,6 +109,30 @@ func (h *hub) setCompositor(st compositor.State) {
 	h.broadcast(compositorMsg(st))
 }
 
+func (h *hub) setWM(wm compositor.Compositor) {
+	h.mu.Lock()
+	h.wm = wm
+	h.mu.Unlock()
+}
+
+func (h *hub) action(name string, id uint64) error {
+	h.mu.Lock()
+	wm := h.wm
+	h.mu.Unlock()
+	if wm == nil {
+		return errors.New("no supported compositor is running")
+	}
+	switch name {
+	case "focus-workspace":
+		return wm.FocusWorkspace(id)
+	case "toggle-overview":
+		return wm.ToggleOverview()
+	case "quit":
+		return wm.Quit()
+	}
+	return fmt.Errorf("unknown action %q", name)
+}
+
 func compositorMsg(st compositor.State) any {
 	return map[string]any{"type": "compositor", "state": st}
 }
@@ -169,20 +198,27 @@ func (h *hub) handle(c net.Conn) {
 	s := bufio.NewScanner(c)
 	for s.Scan() {
 		var in struct {
-			Type  string          `json:"type"`
-			Path  string          `json:"path"`
-			Value json.RawMessage `json:"value"`
+			Type   string          `json:"type"`
+			Path   string          `json:"path"`
+			Value  json.RawMessage `json:"value"`
+			Action string          `json:"action"`
+			ID     uint64          `json:"id"`
 		}
 		if json.Unmarshal(s.Bytes(), &in) != nil {
 			continue
 		}
-		if in.Type == "set" {
-			if err := h.set(in.Path, in.Value); err != nil {
-				line, _ := json.Marshal(errorMsg(err.Error()))
-				h.mu.Lock()
-				c.Write(append(line, '\n'))
-				h.mu.Unlock()
-			}
+		var err error
+		switch in.Type {
+		case "set":
+			err = h.set(in.Path, in.Value)
+		case "action":
+			err = h.action(in.Action, in.ID)
+		}
+		if err != nil {
+			line, _ := json.Marshal(errorMsg(err.Error()))
+			h.mu.Lock()
+			c.Write(append(line, '\n'))
+			h.mu.Unlock()
 		}
 	}
 	h.mu.Lock()

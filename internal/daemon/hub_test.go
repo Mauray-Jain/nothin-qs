@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -161,4 +163,64 @@ func (c *testClient) raw() string {
 		c.t.Fatalf("no message: %v", c.r.Err())
 	}
 	return c.r.Text()
+}
+
+type fakeWM struct{ calls chan string }
+
+func (f fakeWM) Run(context.Context, func(compositor.State)) error { return nil }
+func (f fakeWM) FocusWorkspace(id uint64) error {
+	if id == 99 {
+		return errors.New("niri: workspace not found")
+	}
+	f.calls <- fmt.Sprintf("focus %d", id)
+	return nil
+}
+func (f fakeWM) ToggleOverview() error { f.calls <- "overview"; return nil }
+func (f fakeWM) Quit() error           { f.calls <- "quit"; return nil }
+
+func TestHubActions(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+
+	// Before a compositor is known, actions fail with a message.
+	c.send(`{"type":"action","action":"toggle-overview"}`)
+	if m := c.next(); m.Type != "error" {
+		t.Fatalf("action with no compositor: %+v", m)
+	}
+
+	wm := fakeWM{calls: make(chan string, 4)}
+	h.setWM(wm)
+	for _, tt := range []struct{ msg, want string }{
+		{`{"type":"action","action":"focus-workspace","id":3}`, "focus 3"},
+		{`{"type":"action","action":"toggle-overview"}`, "overview"},
+		{`{"type":"action","action":"quit"}`, "quit"},
+	} {
+		c.send(tt.msg)
+		select {
+		case got := <-wm.calls:
+			if got != tt.want {
+				t.Errorf("%s → %q, want %q", tt.msg, got, tt.want)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("%s: no call", tt.msg)
+		}
+	}
+
+	c.send(`{"type":"action","action":"focus-workspace","id":99}`)
+	if m := c.next(); m.Type != "error" || !strings.Contains(m.Error, "workspace not found") {
+		t.Fatalf("failed action: %+v", m)
+	}
+	c.send(`{"type":"action","action":"dance"}`)
+	if m := c.next(); m.Type != "error" || !strings.Contains(m.Error, "dance") {
+		t.Fatalf("unknown action: %+v", m)
+	}
 }
