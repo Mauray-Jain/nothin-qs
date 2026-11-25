@@ -89,6 +89,14 @@ Scope {
                     tip: Notifs.unread > 0 ? Notifs.unread + " new" : "notifications"
                     onClicked: Notifs.toggleCenter()
                 }
+                RailButton {
+                    Layout.alignment: Qt.AlignCenter
+                    rail: panel
+                    icon: "tune"
+                    active: DeckState.open
+                    tip: "settings"
+                    onClicked: DeckState.toggle()
+                }
                 RailClock {
                     Layout.alignment: Qt.AlignCenter
                     vertical: panel.vertical

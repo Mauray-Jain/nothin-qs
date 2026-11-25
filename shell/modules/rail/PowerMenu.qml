@@ -35,6 +35,7 @@ PopupWindow {
             anchors.centerIn: parent
             spacing: 8
 
+            Pill { width: 150; text: "settings"; onClicked: { root.visible = false; DeckState.open = true } }
             Pill { width: 150; text: "lock"; onClicked: { root.visible = false; LockState.lock() } }
             Pill {
                 width: 150

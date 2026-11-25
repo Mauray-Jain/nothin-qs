@@ -1,12 +1,14 @@
 import QtQuick
 import "../core"
 
-// Equal-width options in one track; one is current. Click, tap or Left/Right.
+// Equal-width options in one track; one is current (or none, at -1).
+// Click, tap or Left/Right.
 Rectangle {
     id: root
 
     property var model: []
     property int currentIndex: 0
+    readonly property bool highlightVisible: currentIndex >= 0 && currentIndex < model.length
     signal activated(int index)
 
     function pick(i) {
@@ -45,6 +47,7 @@ Rectangle {
     }
 
     Rectangle {
+        visible: root.highlightVisible
         x: 4 + root.currentIndex * root.segmentWidth
         y: 4
         width: root.segmentWidth

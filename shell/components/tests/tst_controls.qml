@@ -47,6 +47,14 @@ Item {
             compare(activatedSpy.count, 2)
         }
 
+        function test_segmented_with_no_selection() {
+            seg.currentIndex = -1
+            verify(!seg.highlightVisible)
+            mouseClick(seg, seg.width * 0.25, seg.height / 2)
+            compare(seg.currentIndex, 0)
+            verify(seg.highlightVisible)
+        }
+
         function test_pill_clicks() {
             mouseClick(pill)
             pill.forceActiveFocus()

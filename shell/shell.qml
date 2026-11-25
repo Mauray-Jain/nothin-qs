@@ -13,6 +13,7 @@ import "modules/clipboard"
 import "modules/lock"
 import "modules/idle"
 import "modules/polkit"
+import "modules/deck"
 import "core"
 
 ShellRoot {
@@ -33,6 +34,7 @@ ShellRoot {
             Launcher {}
             Clipboard {}
             Lock {}
+            Deck {}
         }
     }
 

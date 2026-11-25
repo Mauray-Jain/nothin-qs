@@ -1,0 +1,10 @@
+Deck 1.0 Deck.qml
+DeckView 1.0 DeckView.qml
+HomePage 1.0 HomePage.qml
+IdlePage 1.0 IdlePage.qml
+LookPage 1.0 LookPage.qml
+Placer 1.0 Placer.qml
+SettingKnob 1.0 SettingKnob.qml
+SettingRow 1.0 SettingRow.qml
+SettingSegmented 1.0 SettingSegmented.qml
+SettingToggle 1.0 SettingToggle.qml
