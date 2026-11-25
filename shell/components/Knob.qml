@@ -37,7 +37,7 @@ Item {
         anchors.fill: parent
         property real startY
         property real startValue
-        onPressed: e => { startY = e.y; startValue = root.value }
+        onPressed: e => { root.forceActiveFocus(); startY = e.y; startValue = root.value }
         onPositionChanged: e => root.setValue(startValue + (startY - e.y) / root.height)
         onWheel: e => root.setValue(root.value + (e.angleDelta.y > 0 ? root.step : -root.step))
     }

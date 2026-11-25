@@ -106,7 +106,8 @@ Laptop check (**untested on hardware**): `build/nothin ipc testpage toggle`
 - [ ] The gradient square is a dot field: big dots on the left (white), shrinking to
       none on the right (black)
 - [ ] Toggle, GRID/FREE, CAFFEINE pill and the knob respond to mouse, touch and Tab + keys
-- [ ] Change `accent` in config.toml → the knob ring turns that colour when focused
+- [ ] Change `accent` in config.toml → click the knob (or Tab to it): its ring turns that
+      colour. The toast dot uses it too. (Checked on hardware: toast yes; knob fixed after)
 
 ## 1.3 Compositor layer
 

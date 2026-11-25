@@ -67,6 +67,12 @@ Item {
             verify(knobSpy.count >= 4)
         }
 
+        function test_knob_takes_focus_when_pressed() {
+            toggle.forceActiveFocus()
+            mouseClick(knob)
+            verify(knob.activeFocus)
+        }
+
         function test_card_uses_theme() {
             compare(card.color, Theme.surface)
             compare(card.radius, Theme.radius)
