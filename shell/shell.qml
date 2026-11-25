@@ -27,7 +27,6 @@ ShellRoot {
             Wallpaper {}
             Desktop {}
             Toast {}
-            TestPage {}
             Rail {}
             Notifications {}
             OsdWindow {}
@@ -36,6 +35,12 @@ ShellRoot {
             Lock {}
             Deck {}
         }
+    }
+
+    // The test page from phases 1.1–1.2, for `nothin run --dev` only.
+    LazyLoader {
+        active: Config.loaded && Quickshell.env("NOTHIN_DEV") === "1"
+        TestPage {}
     }
 
     // One per session: these wait until nothin owns the session services

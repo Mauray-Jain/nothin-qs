@@ -358,20 +358,10 @@ timeouts, NotificationCard (content, action buttons, close), `Compositor.focused
 Checked in the container: a screenshot of two notification cards and the OSD bar. It
 caught action pills that were invisible on the card, now fixed.
 
-Laptop check (**untested on hardware**). Add your keybinds first (nothin never writes
-them), e.g. in niri's `binds {}`:
-
-```kdl
-XF86AudioRaiseVolume  allow-when-locked=true { spawn "nothin" "ipc" "volume" "up"; }
-XF86AudioLowerVolume  allow-when-locked=true { spawn "nothin" "ipc" "volume" "down"; }
-XF86AudioMute         allow-when-locked=true { spawn "nothin" "ipc" "volume" "mute"; }
-XF86MonBrightnessUp   allow-when-locked=true { spawn "nothin" "ipc" "brightness" "up"; }
-XF86MonBrightnessDown allow-when-locked=true { spawn "nothin" "ipc" "brightness" "down"; }
-XF86AudioPlay         { spawn "nothin" "ipc" "media" "playPause"; }
-XF86AudioNext         { spawn "nothin" "ipc" "media" "next"; }
-XF86AudioPrev         { spawn "nothin" "ipc" "media" "previous"; }
-Mod+N                 { spawn "nothin" "ipc" "notifications" "toggle"; }
-```
+Laptop check (**untested on hardware**). The keys are yours to bind; nothin only offers
+commands (`nothin commands` lists them): `nothin ipc volume up|down|mute`,
+`nothin ipc brightness up|down`, `nothin ipc media playPause|next|previous`,
+`nothin ipc notifications toggle`.
 
 ```bash
 dms kill
@@ -394,7 +384,7 @@ notify-send -t 0 "Sticky" "never expires"
 
 ## 1.8 Launcher core and clipboard
 
-Done when: Mod+P and Mod+Shift+C equivalents work.
+Done when: Mod+P and Mod+Shift+C equivalents work (as commands you bind yourself).
 
 How it fits together:
 - `modules/launcher/Launcher.qml`: an overlay on the focused monitor that takes the
@@ -432,23 +422,18 @@ Checked in the container: a screenshot of the Picker with a calculator answer, a
 window.
 
 Laptop check (**untested on hardware**). Requires `cliphist` and `wl-clipboard`, with
-`wl-paste --watch cliphist store` started by niri. Suggested binds (nothin never writes
-them); pick other keys if DMS still uses these:
+`wl-paste --watch cliphist store` started by niri. Bind your own keys to
+`nothin ipc launcher toggle` and `nothin ipc clipboard toggle`.
 
-```kdl
-Mod+P       { spawn "nothin" "ipc" "launcher" "toggle"; }
-Mod+Shift+C { spawn "nothin" "ipc" "clipboard" "toggle"; }
-```
-
-- [ ] Mod+P opens the launcher on the focused monitor with the cursor in the box;
-      Escape closes it; Mod+P again toggles it
+- [ ] `nothin ipc launcher toggle` opens the launcher on the focused monitor with the cursor in the box;
+      Escape closes it; running it again toggles it
 - [ ] Typing "fi" lists Files/Firefox-style matches with their icons; Enter launches the
       highlighted one; arrows and Tab move; clicking a row launches it
 - [ ] After launching an app a few times, it rises to the top of the empty-query list and
       of its matches; `~/.local/state/nothin/launcher.json` exists
 - [ ] "2*(3+4)" shows 14 first; Enter copies "14" (paste it somewhere)
 - [ ] Typing part of an open window's title lists it as WINDOW; Enter focuses it
-- [ ] Mod+Shift+C shows recent clipboard entries; typing filters them; Enter puts the
+- [ ] `nothin ipc clipboard toggle` shows recent clipboard entries; typing filters them; Enter puts the
       entry back on the clipboard
 
 ## 1.9 Launcher extras
@@ -611,3 +596,41 @@ Laptop check (**untested on hardware**):
 - [ ] LOOK: a swatch recolours accents everywhere; typing `#00aaff` + Enter works
 - [ ] IDLE: pick 1m for lock on AC (with `--exclusive`) → it fades and locks after a
       minute
+
+## 1.12 Setup and switch-over
+
+Done when: the startup line is `nothin run`; DMS is no longer spawned.
+
+User decision: nothin suggests no keybinds anywhere ("don't change keybinds, just make CLI
+commands"). The plan's `nothin keybinds` became `nothin commands`, which lists every
+`nothin ipc <target> <fn>`; everything stays a `nothin ipc` call. The bind snippets in
+earlier phase notes were replaced with the commands.
+
+- `nothin commands`: read from the `IpcHandler`s in the embedded QML, so it lists exactly
+  what the shell offers (the dev test page is left out).
+- `nothin doctor`: FAIL for what nothin can't run without (qs, niri, a broken config),
+  warn for each optional helper with what it's for.
+- `nothin setup`: writes the starter config if missing, runs doctor, and prints what's
+  left by hand (the niri startup lines). It never edits niri's config.
+- The 1.1–1.2 test page now loads only under `--dev`.
+- README rewritten for installing, switching over and recovering.
+
+Automated: `go test ./...` (IPC commands parsed from QML, incl. arguments and nested
+braces; every real target listed, the test page not; doctor's FAIL/warn/ok and the broken
+config line).
+
+Checked in the container: `nothin commands` and `nothin setup` output.
+
+Laptop check (**untested on hardware**): the switch-over.
+
+```bash
+make install
+nothin setup                 # everything ok, or only warnings you accept
+```
+
+- [ ] In `~/.config/niri/config.kdl`, replace the DMS startup line with
+      `spawn-at-startup "nothin" "run"` (plus the `wl-paste --watch cliphist store` line)
+- [ ] Log out and in: the rail, wallpaper and desktop appear; DMS doesn't start
+      (`pgrep -af dms` finds nothing)
+- [ ] Notifications, idle lock and polkit prompts come from nothin
+- [ ] Rollback if needed: put the DMS line back (DMS stays installed)
