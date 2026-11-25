@@ -6,6 +6,8 @@ import "modules/testpage"
 import "modules/rail"
 import "modules/wallpaper"
 import "modules/desktop"
+import "modules/notifications"
+import "modules/osd"
 import "core"
 
 ShellRoot {
@@ -21,6 +23,8 @@ ShellRoot {
             Toast {}
             TestPage {}
             Rail {}
+            Notifications {}
+            OsdWindow {}
         }
     }
 }

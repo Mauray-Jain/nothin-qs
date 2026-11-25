@@ -82,11 +82,12 @@ Scope {
                     onClicked: root.caffeine = !root.caffeine
                 }
                 RailButton {
-                    // Count and the notification center arrive in phase 1.7.
                     Layout.alignment: Qt.AlignCenter
                     rail: panel
-                    icon: "notifications"
-                    tip: "notifications"
+                    icon: Notifs.unread > 0 ? "notifications_unread" : "notifications"
+                    active: Notifs.unread > 0 || Notifs.centerOpen
+                    tip: Notifs.unread > 0 ? Notifs.unread + " new" : "notifications"
+                    onClicked: Notifs.toggleCenter()
                 }
                 RailClock {
                     Layout.alignment: Qt.AlignCenter

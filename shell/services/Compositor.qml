@@ -18,6 +18,12 @@ QtObject {
 
     readonly property var focusedWindow: windows.find(w => w.focused) ?? null
 
+    // focusedScreen picks the focused output from a list of screens (pass
+    // Quickshell.screens), or the first one if none matches.
+    function focusedScreen(screens) {
+        return screens.find(s => s.name === focusedOutput) ?? screens[0]
+    }
+
     function workspacesOn(output) {
         return workspaces.filter(w => w.output === output)
     }

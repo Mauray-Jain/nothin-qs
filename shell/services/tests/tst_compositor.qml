@@ -57,6 +57,13 @@ TestCase {
         compare(actionSpy.signalArguments[2][0], "quit")
     }
 
+    function test_focused_screen() {
+        Compositor.receive({ type: "compositor", state: state })
+        const screens = [{ name: "eDP-1" }, { name: "HDMI-A-1" }]
+        compare(Compositor.focusedScreen(screens).name, "HDMI-A-1")
+        compare(Compositor.focusedScreen([{ name: "DP-9" }]).name, "DP-9") // falls back to the first
+    }
+
     function test_ignores_other_messages() {
         Compositor.receive({ type: "compositor", state: state })
         Compositor.receive({ type: "config", config: {} })

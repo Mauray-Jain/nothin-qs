@@ -1,15 +1,15 @@
 import QtQuick
 import Quickshell
 import "../../core"
+import "../../services"
 
 // Shows daemon errors (a bad config.toml, a refused save) for a few seconds.
-// TODO(1.7): follow the focused output; for now it sits on the first screen.
 PanelWindow {
     id: toast
 
     property string message: ""
 
-    screen: Quickshell.screens[0]
+    screen: Compositor.focusedScreen(Quickshell.screens)
     visible: message !== ""
     anchors { top: true; right: true }
     margins { top: 16; right: 16 }
