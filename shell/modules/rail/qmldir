@@ -1,0 +1,13 @@
+Battery 1.0 Battery.qml
+BluetoothStatus 1.0 BluetoothStatus.qml
+ConfirmPill 1.0 ConfirmPill.qml
+FocusedApp 1.0 FocusedApp.qml
+NetworkStatus 1.0 NetworkStatus.qml
+PowerMenu 1.0 PowerMenu.qml
+Rail 1.0 Rail.qml
+RailButton 1.0 RailButton.qml
+RailClock 1.0 RailClock.qml
+Tooltip 1.0 Tooltip.qml
+Tray 1.0 Tray.qml
+Volume 1.0 Volume.qml
+WorkspaceDots 1.0 WorkspaceDots.qml
