@@ -2,8 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../core"
+import "../../components"
 
-// Development page for checking the config round trip and, later, the design kit.
+// Development page: the config round trip (1.1) and the design kit (1.2).
 //   nothin ipc testpage toggle    show or hide it
 //   nothin ipc testpage name      print general.name as the shell sees it
 Scope {
@@ -27,8 +28,8 @@ Scope {
             visible: root.shown
             focusable: true
             exclusionMode: ExclusionMode.Ignore
-            implicitWidth: 520
-            implicitHeight: 200
+            implicitWidth: 640
+            implicitHeight: 560
             color: "transparent"
 
             Rectangle {
@@ -54,6 +55,43 @@ Scope {
                         font.family: Theme.mono
                         font.pixelSize: 11
                         font.letterSpacing: Theme.labelSpacing
+                    }
+
+                    Row {
+                        spacing: 24
+
+                        DotText { text: "16:55"; dotSize: 7; gap: 3; anchors.verticalCenter: parent.verticalCenter }
+                        DotRing { value: 0.7; diameter: 88; anchors.verticalCenter: parent.verticalCenter }
+
+                        Item {
+                            width: 140
+                            height: 140
+
+                            Rectangle {
+                                id: art
+                                anchors.fill: parent
+                                visible: false
+                                gradient: Gradient {
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: 0; color: "white" }
+                                    GradientStop { position: 1; color: "black" }
+                                }
+                            }
+                            Halftone {
+                                anchors.fill: parent
+                                dotSize: 10
+                                source: ShaderEffectSource { sourceItem: art; hideSource: true }
+                            }
+                        }
+                    }
+
+                    Row {
+                        spacing: 12
+                        DotSpark { values: [3, 5, 4, 7, 6, 9, 5, 8, 10, 7]; anchors.verticalCenter: parent.verticalCenter }
+                        Toggle { anchors.verticalCenter: parent.verticalCenter }
+                        Segmented { model: ["GRID", "FREE"] }
+                        Pill { text: "caffeine"; anchors.verticalCenter: parent.verticalCenter }
+                        Knob { diameter: 48 }
                     }
 
                     Rectangle {

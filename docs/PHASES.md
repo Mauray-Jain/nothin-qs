@@ -73,3 +73,36 @@ build/nothin ipc testpage name        # prints general.name
 - [ ] Type a name in the page's field and press Enter → the file changes only on the `name`
       line; all comments are still there
 - [ ] With the file broken, Enter in the field → toast says to fix the file first
+
+## 1.2 Design kit
+
+Done when: a test page renders `16:55`, a 70% ring and a halftoned image.
+
+Components in `shell/components/`: `DotText` (5×7 glyphs in `Glyphs.js`: digits, A–Z,
+`: . - / % °`), `DotRing` (full ring or arc), `DotSpark`, `Card`, `Pill`, `Toggle`,
+`Segmented`, `Knob`, `Halftone`. Every control works by mouse/touch (TapHandler or
+MouseArea) and keyboard (Space/Enter, arrows), and shows a thin outline when focused.
+
+Shader: `shell/shaders/halftone.frag` → `scripts/compile-shaders.sh` (or `make shaders`)
+writes `halftone.frag.qsb` with `--qsbversion 64`, which loads on Qt 6.4 and newer.
+`make build` fails if a committed `.qsb` is stale; it skips the check when `qsb` is missing.
+
+Automated (`qmltestrunner`): glyph table shape and coverage, text layout and size, ring
+lit count and dot positions (full ring and arc), sparkline levels, Toggle/Segmented/Pill/
+Knob by mouse and keys, Card theming, Halftone wiring.
+
+Not automated: the shader's pixels. Qt Quick falls back to its software renderer in the
+container, which skips shaders, so a pixel test can't run there. `qsb` compiling it to
+SPIR-V does catch GLSL errors.
+
+Checked in the container: a screenshot of the kit (minus the halftone) from the same
+components looked right.
+
+Laptop check (**untested on hardware**): `build/nothin ipc testpage toggle`
+
+- [ ] `16:55` in dots, white on the dark card
+- [ ] Ring 70% lit, clockwise from twelve o'clock
+- [ ] The gradient square is a dot field: big dots on the left (white), shrinking to
+      none on the right (black)
+- [ ] Toggle, GRID/FREE, CAFFEINE pill and the knob respond to mouse, touch and Tab + keys
+- [ ] Change `accent` in config.toml → the knob ring turns that colour when focused
