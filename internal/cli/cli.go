@@ -28,6 +28,9 @@ commands:
   restart                  restart qs under the running daemon
   kill                     stop nothin and the shell
   ipc <target> <fn> [args] call an IpcHandler in the shell
+  commands                 list every ipc call the shell offers
+  doctor                   check that nothin has what it needs
+  setup                    write the starter config, run doctor, show what's left
 `
 
 // Main runs the command in args and returns the exit code.
@@ -47,6 +50,17 @@ func Main(args []string, stderr io.Writer) int {
 		err = signalDaemon(syscall.SIGHUP)
 	case "kill":
 		err = kill()
+	case "commands":
+		fmt.Print(commandList())
+	case "doctor", "setup":
+		report, ok := doctor(realDoctorEnv())
+		if args[0] == "setup" {
+			report, ok = setup(realDoctorEnv())
+		}
+		fmt.Print(report)
+		if !ok {
+			return 1
+		}
 	case "ipc":
 		if len(args) < 3 {
 			fmt.Fprint(stderr, usage)
