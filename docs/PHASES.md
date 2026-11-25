@@ -391,3 +391,62 @@ notify-send -t 0 "Sticky" "never expires"
 - [ ] Break config.toml → the toast appears on the monitor you're focused on
 - [ ] Without `--notifications` (and with DMS running): DMS still gets the notifications
 - [ ] Afterwards: `build/nothin kill`, then `dms run`
+
+## 1.8 Launcher core and clipboard
+
+Done when: Mod+P and Mod+Shift+C equivalents work.
+
+How it fits together:
+- `modules/launcher/Launcher.qml`: an overlay on the focused monitor that takes the
+  keyboard. One search box (`components/Picker.qml`) lists a calculator answer, then up
+  to 8 apps, then up to 5 open windows. Enter launches the app, focuses the window
+  (new niri action `focus-window`), or copies the answer with `wl-copy`.
+- Ranking (`Rank.js`): name starts with the query > a word in it does > contains >
+  generic name, keywords or id contain it > its letters in order. Ties go to the most
+  used, then the name. An empty query lists apps by use.
+- Frecency: the daemon keeps up to 20 launch times per app in
+  `~/.local/state/nothin/launcher.json` (never in the TOML) and scores them 4/2/1/0.5 for
+  today/this week/this month/older. Scores are sent at start and after each launch.
+- Calculator (`Calc.js`): its own parser, never `eval`: `+ - * / % ^`, brackets, `sqrt
+  abs round floor ceil sin cos tan log ln`, `pi`, `e`. A bare number isn't shown as a
+  result.
+- `modules/clipboard/Clipboard.qml`: `cliphist list` in the same Picker; Enter runs
+  `cliphist decode <id> | wl-copy` (the id is an argument, not shell text).
+- IPC: `launcher toggle`, `clipboard toggle`.
+
+Decided unattended (change any of these by asking):
+- The launcher and clipboard close with Escape or after a choice. Clicking outside them
+  doesn't close them.
+- Calculator results are copied, not typed into a window.
+- The clipboard shows the latest 100 entries; images show as cliphist's text preview.
+- Launches are only counted from nothin's launcher.
+
+Automated: `go test ./...` (frecency weights and order, save/load, a missing or broken
+file; the focus-window action; the hub recording a launch and publishing scores).
+`qmltestrunner`: Calc (precedence, right-assoc `^`, unary minus, functions, constants,
+rejects), Rank (tiers, ties, empty query, letters in order), Results order, Cliphist
+parsing and filtering, Picker (typing, arrows, Enter, Escape, click, reset on new items),
+Usage, `Compositor.focusWindow`.
+
+Checked in the container: a screenshot of the Picker with a calculator answer, apps and a
+window.
+
+Laptop check (**untested on hardware**). Requires `cliphist` and `wl-clipboard`, with
+`wl-paste --watch cliphist store` started by niri. Suggested binds (nothin never writes
+them); pick other keys if DMS still uses these:
+
+```kdl
+Mod+P       { spawn "nothin" "ipc" "launcher" "toggle"; }
+Mod+Shift+C { spawn "nothin" "ipc" "clipboard" "toggle"; }
+```
+
+- [ ] Mod+P opens the launcher on the focused monitor with the cursor in the box;
+      Escape closes it; Mod+P again toggles it
+- [ ] Typing "fi" lists Files/Firefox-style matches with their icons; Enter launches the
+      highlighted one; arrows and Tab move; clicking a row launches it
+- [ ] After launching an app a few times, it rises to the top of the empty-query list and
+      of its matches; `~/.local/state/nothin/launcher.json` exists
+- [ ] "2*(3+4)" shows 14 first; Enter copies "14" (paste it somewhere)
+- [ ] Typing part of an open window's title lists it as WINDOW; Enter focuses it
+- [ ] Mod+Shift+C shows recent clipboard entries; typing filters them; Enter puts the
+      entry back on the clipboard
