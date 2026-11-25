@@ -37,4 +37,18 @@ TestCase {
         Usage.launched("kitty.desktop")
         compare(recorded.signalArguments[0][0], "kitty.desktop")
     }
+
+    SignalSpy { id: finds; target: FileSearch; signalName: "requested" }
+
+    function test_file_search_keeps_only_the_latest_reply() {
+        FileSearch.search("rep")
+        FileSearch.search("repo")
+        compare(finds.count, 2)
+        const old = finds.signalArguments[0][1], latest = finds.signalArguments[1][1]
+        FileSearch.receive({ type: "files", seq: latest, query: "repo", results: ["/a/report"] })
+        FileSearch.receive({ type: "files", seq: old, query: "rep", results: ["/stale"] })
+        compare(FileSearch.results, ["/a/report"])
+        FileSearch.search("")
+        compare(FileSearch.results, [])
+    }
 }

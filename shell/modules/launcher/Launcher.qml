@@ -7,8 +7,9 @@ import "../../components"
 import "../../services"
 import "Results.js" as Results
 
-// The launcher: apps (by frecency), open windows and a calculator in one
-// search, on the focused monitor.   nothin ipc launcher toggle
+// The launcher, on the focused monitor: apps (by frecency), open windows, a
+// calculator and web search; ":" emoji, "/" files, "?" web.
+//   nothin ipc launcher toggle
 Scope {
     id: root
 
@@ -23,6 +24,12 @@ Scope {
             Compositor.focusWindow(r.win.id)
         } else if (r.kind === "calc") {
             Quickshell.execDetached(["wl-copy", r.title])
+        } else if (r.kind === "emoji") {
+            Quickshell.execDetached(["wl-copy", r.emoji])
+        } else if (r.kind === "file") {
+            Quickshell.execDetached(["xdg-open", r.path])
+        } else if (r.kind === "web") {
+            Quickshell.execDetached(["xdg-open", r.url])
         }
     }
 
@@ -50,11 +57,17 @@ Scope {
             id: picker
 
             readonly property var apps: DesktopEntries.applications.values.filter(a => !a.noDisplay)
-            readonly property var results: Results.build(query, apps, Usage.scores, Compositor.windows)
+            readonly property var results: Results.build(query, {
+                apps: apps, scores: Usage.scores, windows: Compositor.windows, files: FileSearch.results,
+                searchUrl: Config.values.launcher?.search_url ?? "https://duckduckgo.com/?q=%s",
+                home: Quickshell.env("HOME") ?? ""
+            })
+
+            onQueryChanged: FileSearch.search(Results.fileQuery(query))
 
             anchors.fill: parent
             focus: true
-            placeholder: "Apps, windows, 2+2"
+            placeholder: "Apps, 2+2   :emoji   /files   ?web"
             items: results.map(r => r.kind === "app"
                 ? Object.assign({}, r, { iconSource: Quickshell.iconPath(r.app.icon, true) || "", icon: "apps" })
                 : r)

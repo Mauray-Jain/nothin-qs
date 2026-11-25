@@ -26,6 +26,8 @@ Socket {
                 Brightness.receive(msg)
             else if (msg.type === "usage")
                 Usage.receive(msg)
+            else if (msg.type === "files")
+                FileSearch.receive(msg)
         }
     }
 
@@ -42,6 +44,11 @@ Socket {
     property Connections launches: Connections {
         target: Usage
         function onRecordRequested(id) { socket.send({ type: "launch", entry: id }) }
+    }
+
+    property Connections finds: Connections {
+        target: FileSearch
+        function onRequested(query, seq) { socket.send({ type: "find", query: query, seq: seq }) }
     }
 
     property Connections actions: Connections {
