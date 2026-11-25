@@ -26,8 +26,9 @@ build/nothin run --dev .      # in a terminal, next to DMS
 - [ ] `qs` starts with no QML errors in the terminal or `~/.local/state/nothin/nothin.log`
 - [ ] DMS is still fully working
 - [ ] `build/nothin restart` prints "restarting qs" and a new pid
-- [ ] `pkill -x qs` three times quickly → nothin exits with "giving up"
-- [ ] `build/nothin kill` stops nothin and `pgrep -x qs` finds no nothin qs
+- [ ] `kill $(cat $XDG_RUNTIME_DIR/nothin/qs.pid)` three times within 10 s → nothin exits
+      with "giving up" (not `pkill -x qs`: that would kill DMS's qs too)
+- [ ] `build/nothin kill` stops nothin, and `pgrep -af "qs -p"` lists no qs for nothin's `shell/`
 
 ## 1.1 Config daemon
 
