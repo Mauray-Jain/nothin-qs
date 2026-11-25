@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -19,6 +20,7 @@ type Config struct {
 	ConfigVersion int     `toml:"config_version" json:"config_version"`
 	General       General `toml:"general" json:"general"`
 	Theme         Theme   `toml:"theme" json:"theme"`
+	Rail          Rail    `toml:"rail" json:"rail"`
 }
 
 type General struct {
@@ -31,11 +33,18 @@ type Theme struct {
 	Background string `toml:"background" json:"background"`
 }
 
+type Rail struct {
+	Position string   `toml:"position" json:"position"` // left | right | top | bottom
+	Monitors []string `toml:"monitors" json:"monitors"` // empty = every monitor
+	Clock24h bool     `toml:"clock_24h" json:"clock_24h"`
+}
+
 func Defaults() Config {
 	return Config{
 		ConfigVersion: Version,
 		General:       General{Compositor: "auto"},
 		Theme:         Theme{Accent: "#d71921", Background: "#000000"},
+		Rail:          Rail{Position: "left", Monitors: []string{}, Clock24h: true},
 	}
 }
 
@@ -103,6 +112,8 @@ func (c Config) validate() (path, msg string) {
 		return "theme.accent", `must be a colour like "#d71921"`
 	case !hexColour.MatchString(c.Theme.Background):
 		return "theme.background", `must be a colour like "#000000"`
+	case !slices.Contains([]string{"left", "right", "top", "bottom"}, c.Rail.Position):
+		return "rail.position", `must be "left", "right", "top" or "bottom"`
 	}
 	return "", ""
 }

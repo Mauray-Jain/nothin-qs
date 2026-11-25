@@ -17,3 +17,11 @@ compositor = "auto"
 # Used only for active dots, play, errors and pen ink.
 accent = "#d71921"
 background = "#000000"
+
+[rail]
+# Which screen edge the rail sits on: "left", "right", "top" or "bottom".
+position = "left"
+# Monitors to show it on, by name (see `niri msg outputs`). Empty means all.
+monitors = []
+# 24-hour clock. false shows 12-hour with AM/PM.
+clock_24h = true

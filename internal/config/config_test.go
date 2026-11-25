@@ -19,9 +19,16 @@ func TestLoad(t *testing.T) {
 		check    func(Config) bool
 	}{
 		{name: "empty uses defaults", doc: "",
-			check: func(c Config) bool { return c == Defaults() }},
+			check: func(c Config) bool { return reflect.DeepEqual(c, Defaults()) }},
 		{name: "starter file loads", doc: Starter,
-			check: func(c Config) bool { return c == Defaults() }},
+			check: func(c Config) bool { return reflect.DeepEqual(c, Defaults()) }},
+		{name: "rail defaults", doc: "",
+			check: func(c Config) bool {
+				return c.Rail.Position == "left" && c.Rail.Clock24h && c.Rail.Monitors != nil && len(c.Rail.Monitors) == 0
+			}},
+		{name: "rail monitors", doc: "[rail]\nmonitors = [\"eDP-1\", \"HDMI-A-1\"]\n",
+			check: func(c Config) bool { return len(c.Rail.Monitors) == 2 && c.Rail.Monitors[1] == "HDMI-A-1" }},
+		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},
 		{name: "syntax error", doc: "[general]\nname = \"ada\n", wantLine: 2},
@@ -106,7 +113,7 @@ func TestExampleMatchesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c != Defaults() {
+	if !reflect.DeepEqual(c, Defaults()) {
 		t.Errorf("example values differ from defaults:\n got %+v\nwant %+v", c, Defaults())
 	}
 	for _, k := range keys(reflect.TypeOf(Config{}), nil) {
