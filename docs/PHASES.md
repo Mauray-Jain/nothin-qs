@@ -156,3 +156,57 @@ build/nothin ipc testpage desktop
 - [ ] With an external monitor: plug it in → its workspaces appear under its name, and
       focus moves between outputs correctly (**multi-monitor untested** until a second
       screen is available, PLAN.md §5)
+
+## 1.4 Rail
+
+Done when: the rail is on every monitor; clicking dots switches workspaces; tray icons
+open their menus.
+
+Decisions (asked before starting):
+- `rail.position` = left | right | top | bottom, default left. `rail.monitors` (empty =
+  all). `rail.clock_24h`, default true.
+- Items, in order: overview, workspace dots, (space), focused app, tray, network,
+  Bluetooth, volume, battery, caffeine, notifications bell, clock (with seconds, day,
+  date), power.
+- Dots: focused in accent, shown-on-this-monitor white, others grey, urgent blink.
+- Power menu: suspend, log out (niri's own confirmation), reboot and shut down need a
+  second press within 3 s. Lock joins in 1.10.
+- The bell is only an icon until 1.7.
+
+How it fits together:
+- Actions: the shell sends `{"type":"action","action":"focus-workspace","id":3}` (also
+  `toggle-overview`, `quit`). The daemon sends them on `$NIRI_SOCKET`, which accepts
+  workspace ids (`niri msg` doesn't). Failures come back as a toast.
+- Caffeine is a Wayland idle inhibitor, which niri honours. DMS's idle follows niri's,
+  so it should respect it too until nothin's own idle (1.10).
+- Network and Bluetooth sit behind a `Loader`, so a Quickshell without
+  `Quickshell.Networking` or `Quickshell.Bluetooth` loses only that icon.
+- The rail can't take keyboard focus (it would steal it from windows), so it is mouse
+  and touch only. Keyboard access to its actions can come through `nothin ipc` binds.
+
+Automated: `go test ./...` (rail settings; niri actions against a stand-in socket,
+including niri's error reply; the hub routing actions). `qmltestrunner`: Clock formats,
+`Config.onMonitor`, Compositor actions, Icon ligatures, WorkspaceDots (count, colours,
+blink, click, orientation), RailClock lines, ConfirmPill (press, timeout, keys).
+
+Checked in the container: a screenshot of a mock rail from the same parts, both
+orientations.
+
+Laptop check (**untested on hardware**). Run `build/nothin run --dev .`; DMS's bar stays
+up, so both bars show.
+
+- [ ] A black rail on the left of every monitor; windows tile beside it, not under it
+- [ ] Dots match your workspaces on that monitor; clicking one switches to it; the
+      focused one is red; open the overview from the top button (it turns red)
+- [ ] Focused app's icon shows on the focused monitor's rail; hover → title
+- [ ] Tray icons are grey; right click opens each menu; left click does the app's action
+- [ ] Wi-Fi, Bluetooth, volume and battery icons match reality; hover shows details;
+      click volume → mute; scroll on it → volume changes; click Bluetooth → toggles
+- [ ] Caffeine: click → red; idle past your lock timeout → no lock; click again → normal
+- [ ] Clock ticks every second; `clock_24h = false` under `[rail]` → 12-hour with AM/PM
+- [ ] Power → menu; click outside closes it; REBOOT → "REBOOT? AGAIN", wait 3 s → back
+      (don't press twice unless you mean it); LOG OUT → niri asks to confirm (press Esc)
+- [ ] `position = "top"` (then `"right"`, `"bottom"`) under `[rail]` → the rail moves
+      live; on top/bottom the app title shows beside its icon
+- [ ] `monitors = ["eDP-1"]` → the rail shows only there (with a second monitor)
+- [ ] If network or Bluetooth is missing, run `qs --version` and send it with the log
