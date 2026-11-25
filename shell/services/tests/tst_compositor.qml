@@ -43,6 +43,20 @@ TestCase {
         compare(Compositor.workspacesOn("DP-9").length, 0)
     }
 
+    SignalSpy { id: actionSpy; target: Compositor; signalName: "actionRequested" }
+
+    function test_actions_go_to_the_daemon() {
+        actionSpy.clear()
+        Compositor.focusWorkspace(3)
+        Compositor.toggleOverview()
+        Compositor.quit()
+        compare(actionSpy.count, 3)
+        compare(actionSpy.signalArguments[0][0], "focus-workspace")
+        compare(actionSpy.signalArguments[0][1], 3)
+        compare(actionSpy.signalArguments[1][0], "toggle-overview")
+        compare(actionSpy.signalArguments[2][0], "quit")
+    }
+
     function test_ignores_other_messages() {
         Compositor.receive({ type: "compositor", state: state })
         Compositor.receive({ type: "config", config: {} })

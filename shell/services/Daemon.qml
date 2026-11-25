@@ -21,11 +21,18 @@ Socket {
         }
     }
 
+    function send(msg) {
+        socket.write(JSON.stringify(msg) + "\n")
+        socket.flush()
+    }
+
     property Connections writes: Connections {
         target: Config
-        function onSetRequested(key, value) {
-            socket.write(JSON.stringify({ type: "set", path: key, value: value }) + "\n")
-            socket.flush()
-        }
+        function onSetRequested(key, value) { socket.send({ type: "set", path: key, value: value }) }
+    }
+
+    property Connections actions: Connections {
+        target: Compositor
+        function onActionRequested(action, id) { socket.send({ type: "action", action: action, id: id }) }
     }
 }

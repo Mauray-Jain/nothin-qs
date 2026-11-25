@@ -34,4 +34,11 @@ TestCase {
         compare(Theme.body, "Space Grotesk")
         compare(Theme.icons, "Material Symbols Outlined")
     }
+
+    function test_on_monitor() {
+        verify(Config.onMonitor([], "eDP-1"))
+        verify(Config.onMonitor(["eDP-1"], "eDP-1"))
+        verify(!Config.onMonitor(["HDMI-A-1"], "eDP-1"))
+        verify(Config.onMonitor(undefined, "eDP-1"))
+    }
 }

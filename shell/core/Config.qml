@@ -11,6 +11,12 @@ QtObject {
     signal setRequested(string path, var value)
     signal failed(string message)
 
+    // Whether a surface with this `monitors` setting shows on the named
+    // output. An empty list means every output.
+    function onMonitor(monitors, name) {
+        return !monitors || monitors.length === 0 || monitors.includes(name)
+    }
+
     function set(path, value) {
         setRequested(path, value)
     }

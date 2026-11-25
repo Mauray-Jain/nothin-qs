@@ -10,6 +10,12 @@ QtObject {
     property var workspaces: [] // by output, then index
     property var windows: []
 
+    signal actionRequested(string action, int id)
+
+    function focusWorkspace(id) { actionRequested("focus-workspace", id) }
+    function toggleOverview() { actionRequested("toggle-overview", 0) }
+    function quit() { actionRequested("quit", 0) } // log out; niri asks to confirm
+
     readonly property var focusedWindow: windows.find(w => w.focused) ?? null
 
     function workspacesOn(output) {
