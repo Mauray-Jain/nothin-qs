@@ -69,3 +69,25 @@ location = ""
 [launcher]
 # Web search for "?query" in the launcher; %s is replaced by the query.
 search_url = "https://duckduckgo.com/?q=%s"
+
+[idle]
+# What "suspend" means here and in the power menu: "suspend", "hibernate" or
+# "suspend-then-hibernate" (the last two need a working hibernate setup).
+suspend_mode = "suspend"
+# Seconds the screen fades to black before the idle lock; any input cancels.
+# 0 locks straight away.
+fade = 5
+
+# Seconds without input before each step; 0 turns that step off.
+[idle.ac]
+lock = 300
+screen_off = 600
+suspend = 0
+# Screen off this long after the screen is locked (by you or by idle).
+lock_screen_off = 60
+
+[idle.battery]
+lock = 180
+screen_off = 300
+suspend = 840
+lock_screen_off = 60

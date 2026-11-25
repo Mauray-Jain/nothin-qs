@@ -63,6 +63,16 @@ func TestLoad(t *testing.T) {
 			check: func(c Config) bool { return c.Launcher.SearchURL == "https://duckduckgo.com/?q=%s" }},
 		{name: "search url without %s", doc: "[launcher]\nsearch_url = \"https://example.com/\"\n", wantLine: 2, wantErr: "launcher.search_url"},
 		{name: "search url not http", doc: "[launcher]\nsearch_url = \"file:///%s\"\n", wantLine: 2, wantErr: "launcher.search_url"},
+		{name: "idle defaults", doc: "",
+			check: func(c Config) bool {
+				i := c.Idle
+				return i.SuspendMode == "suspend" && i.Fade == 5 &&
+					i.AC == IdleTimes{Lock: 300, ScreenOff: 600, Suspend: 0, LockScreenOff: 60} &&
+					i.Battery == IdleTimes{Lock: 180, ScreenOff: 300, Suspend: 840, LockScreenOff: 60}
+			}},
+		{name: "bad suspend mode", doc: "[idle]\nsuspend_mode = \"sleep\"\n", wantLine: 2, wantErr: "idle.suspend_mode"},
+		{name: "negative timeout", doc: "[idle.ac]\nlock = -1\n", wantLine: 2, wantErr: "idle.ac.lock"},
+		{name: "fade too long", doc: "[idle]\nfade = 120\n", wantLine: 2, wantErr: "idle.fade"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},
