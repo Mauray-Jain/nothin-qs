@@ -102,7 +102,7 @@ Scope {
                         Toggle { anchors.verticalCenter: parent.verticalCenter }
                         Segmented { model: ["GRID", "FREE"] }
                         Pill { text: "caffeine"; anchors.verticalCenter: parent.verticalCenter; onClicked: active = !active }
-                        Knob { diameter: 48 }
+                        Knob { diameter: 48; value: 0.5 }
                     }
 
                     Rectangle {

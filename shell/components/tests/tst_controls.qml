@@ -73,6 +73,18 @@ Item {
             verify(knob.activeFocus)
         }
 
+        // The first dot of the arc (bottom left) is lit at any value above 0.
+        function test_focused_knob_lights_in_accent() {
+            Config.receive({ type: "config", config: { theme: { accent: "#00ff00", background: "#000000" } } })
+            knob.value = 0.5
+            knob.forceActiveFocus()
+            wait(Theme.fast * 2) // colour animation
+            const c = knob.children[0].dotCentre(0)
+            const img = grabImage(knob)
+            const px = img.pixel(Math.round(c.x), Math.round(c.y))
+            verify(Qt.colorEqual(px, "#00ff00"), "lit dot is " + px)
+        }
+
         function test_card_uses_theme() {
             compare(card.color, Theme.surface)
             compare(card.radius, Theme.radius)
