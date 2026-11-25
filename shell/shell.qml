@@ -3,6 +3,7 @@ import Quickshell
 import "services"
 import "modules/toast"
 import "modules/testpage"
+import "modules/rail"
 import "core"
 
 ShellRoot {
@@ -15,6 +16,7 @@ ShellRoot {
         Scope {
             Toast {}
             TestPage {}
+            Rail {}
         }
     }
 }
