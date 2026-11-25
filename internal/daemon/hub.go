@@ -21,8 +21,9 @@ import (
 
 // hub owns config.toml and talks to the shell over the socket in JSON lines.
 //
-// Out: {"type":"config","config":{…}}, {"type":"error","error":"…"} and
-// {"type":"compositor","state":{…}}.
+// Out: {"type":"config","config":{…}}, {"type":"error","error":"…"}, and
+// published state: {"type":"compositor","state":{…}}, {"type":"system",…},
+// {"type":"weather",…}. A new client gets the latest of each straight away.
 // In:  {"type":"set","path":"theme.accent","value":"#ffffff"} and
 //
 //	{"type":"action","action":"focus-workspace","id":3} (also
@@ -34,14 +35,15 @@ type hub struct {
 	last    []byte        // file contents last loaded or written
 	good    config.Config // last config that loaded
 	err     string        // current file error, "" if none
-	comp    *compositor.State
+	latest  map[string]any        // last published message of each type
+	order   []string              // types in the order first published
 	wm      compositor.Compositor // nil until detected
 	clients map[net.Conn]bool
 }
 
 // newHub loads path, writing the starter file if it doesn't exist.
 func newHub(path string) (*hub, error) {
-	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}}
+	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}, latest: map[string]any{}}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		b = []byte(config.Starter)
@@ -103,12 +105,19 @@ func (h *hub) reload() {
 	h.broadcast(h.configMsg())
 }
 
-// setCompositor stores the latest desktop state and sends it to every client.
-func (h *hub) setCompositor(st compositor.State) {
+// publish sends msg to every client and keeps it as the latest of its type.
+func (h *hub) publish(typ string, msg any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.comp = &st
-	h.broadcast(compositorMsg(st))
+	if _, ok := h.latest[typ]; !ok {
+		h.order = append(h.order, typ)
+	}
+	h.latest[typ] = msg
+	h.broadcast(msg)
+}
+
+func (h *hub) setCompositor(st compositor.State) {
+	h.publish("compositor", compositorMsg(st))
 }
 
 func (h *hub) setWM(wm compositor.Compositor) {
@@ -188,8 +197,8 @@ func (h *hub) handle(c net.Conn) {
 	if h.err != "" {
 		first = append(first, errorMsg(h.err))
 	}
-	if h.comp != nil {
-		first = append(first, compositorMsg(*h.comp))
+	for _, typ := range h.order {
+		first = append(first, h.latest[typ])
 	}
 	for _, m := range first {
 		line, _ := json.Marshal(m)

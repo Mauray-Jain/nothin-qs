@@ -14,9 +14,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
+	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
 )
 
 // RuntimeDir holds nothin.pid, qs.pid and nothin.sock.
@@ -108,6 +110,7 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 		}
 	}()
 	go followCompositor(ctx, h, log)
+	go sampleSystem(ctx, h)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -165,5 +168,20 @@ func followCompositor(ctx context.Context, h *hub, log io.Writer) {
 	})
 	if ctx.Err() == nil {
 		fmt.Fprintln(log, "nothin: niri event stream ended:", err)
+	}
+}
+
+// sampleSystem publishes CPU, memory, disk and temperature every 2 seconds.
+func sampleSystem(ctx context.Context, h *hub) {
+	var s sysstat.Sampler
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+	for {
+		h.publish("system", map[string]any{"type": "system", "stats": s.Sample("/")})
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
 	}
 }

@@ -239,3 +239,30 @@ func TestHubResolvesWallpaper(t *testing.T) {
 		t.Errorf("wallpaper path = %q", got)
 	}
 }
+
+// Any published message type reaches current clients and is replayed to new ones.
+func TestHubPublishReplaysLatestOfEachType(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+
+	c := dial(t, sock)
+	c.next() // config
+	h.publish("system", map[string]any{"type": "system", "stats": map[string]any{"cpu": 0.1}})
+	h.publish("system", map[string]any{"type": "system", "stats": map[string]any{"cpu": 0.2}})
+	c.raw()
+	if line := c.raw(); !strings.Contains(line, `"cpu":0.2`) {
+		t.Fatalf("second publish = %s", line)
+	}
+	c2 := dial(t, sock)
+	c2.next() // config
+	if line := c2.raw(); !strings.Contains(line, `"cpu":0.2`) || strings.Contains(line, `"cpu":0.1`) {
+		t.Fatalf("late client got %s, want only the latest", line)
+	}
+}
