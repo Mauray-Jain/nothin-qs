@@ -32,9 +32,9 @@ type hub struct {
 	path string
 
 	mu      sync.Mutex
-	last    []byte        // file contents last loaded or written
-	good    config.Config // last config that loaded
-	err     string        // current file error, "" if none
+	last    []byte                // file contents last loaded or written
+	good    config.Config         // last config that loaded
+	err     string                // current file error, "" if none
 	latest  map[string]any        // last published message of each type
 	order   []string              // types in the order first published
 	wm      compositor.Compositor // nil until detected
