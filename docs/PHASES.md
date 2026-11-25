@@ -491,3 +491,75 @@ build/nothin ipc launcher toggle
       the file in its default app
 - [ ] `?niri wayland` opens a DuckDuckGo search in your browser
 - [ ] A normal search ends with "Search the web for …"
+
+## 1.10 Lock, idle, polkit, D-Bus
+
+Done when: locks and unlocks, idle timers fire, lock before suspend, polkit prompts appear.
+
+User decisions: the plan's idle defaults; plain suspend; a 5 s fade; the lock screen shows
+the date, greeting and battery as well as the clock and password field.
+
+How it fits together:
+- `--notifications` is now `--exclusive` (`NOTHIN_EXCLUSIVE=1`). It covers every
+  one-per-session service: notification server, polkit agent, idle, lock before sleep and
+  the screensaver inhibit service. `nothin run` always owns them; under `--dev` they stay
+  with DMS unless `--exclusive` is given.
+- Lock (`modules/lock/`): `WlSessionLock` on every monitor; the password field is on the
+  monitor that had focus, the others show a dimmed clock. Checked with PAM's `login`
+  stack. `nothin ipc lock lock`, LOCK in the power menu, idle, logind's lock-session and
+  sleep all lock.
+- Lock before sleep (`internal/dbus`, exclusive only): nothin holds a logind "delay"
+  inhibitor; on PrepareForSleep it asks the shell to lock, waits until the shell reports
+  the lock is up (at most 2 s), then lets sleep continue, and takes a new inhibitor after
+  resume.
+- Screensaver inhibit (`internal/dbus`, exclusive only): nothin owns
+  `org.freedesktop.ScreenSaver`, so apps that ask to keep the screen awake (video
+  players, browsers) pause idle. Apps that quit without releasing are forgotten.
+- Idle (`modules/idle/`, exclusive only): `[idle.ac]` or `[idle.battery]` by UPower's
+  power source. Fade to black for `idle.fade` seconds ending at the lock time (input
+  cancels), screen off via niri, suspend with `idle.suspend_mode`, and screen off
+  `lock_screen_off` seconds into a lock. Caffeine and other Wayland idle inhibitors pause
+  it too.
+- Polkit (`modules/polkit/`, exclusive only): Quickshell's agent with a password prompt on
+  the focused monitor.
+
+Decided unattended (change any of these by asking):
+- The fade ends at the lock time, so it starts 5 s before it (never before 1 s).
+- Screen off after lock doesn't respect inhibitors (a locked screen has nothing to watch).
+- A wrong password shows "WRONG PASSWORD"; PAM's own limit shows "TOO MANY TRIES".
+- The dot zero has no slash (it read like a 6).
+
+Automated: `go test ./...` (idle settings; ScreenSaver Inhibit/UnInhibit on both paths,
+a client leaving, the name already taken, all on a private dbus-daemon; the sleep
+locker waiting for the lock or giving up; the hub's lock round trip, never replayed; the
+power-off-monitors action; `--exclusive`). `qmltestrunner`: IdlePlan, LockState,
+IdleInhibit, LockView (texts, Enter submits and clears, not while busy, no field on other
+monitors).
+
+Checked in the container: a screenshot of the lock view.
+
+Laptop check (**untested on hardware**). A crashed lock keeps the session locked (niri
+shows red). Ctrl+Alt+F3 gives a TTY; there, `nothin kill` (or `pkill -x qs` if nothin is
+gone) and log back in. **Try the lock in a nested niri first:**
+
+```bash
+niri                              # from your session: opens a nested niri window
+# inside its terminal:
+build/nothin run --dev . --exclusive
+build/nothin ipc lock lock
+```
+
+- [ ] Nested: the lock covers the nested window; a wrong password shows the error; the
+      right one unlocks
+- [ ] Real session, with DMS still running: `build/nothin ipc lock lock` → lock screen on
+      every monitor, password field on the one you were on, battery at the bottom
+- [ ] Power menu → LOCK locks; SUSPEND suspends, and the screen is locked on wake
+- [ ] With DMS stopped (`dms kill`, then `build/nothin run --dev . --exclusive`):
+  - [ ] Set `[idle.ac] lock = 20` → at ~15 s the screen fades; moving the mouse cancels;
+        leaving it locks at 20 s
+  - [ ] Play a video in a browser or mpv → no fade while it plays
+  - [ ] Caffeine on the rail → no fade
+  - [ ] `systemctl suspend` → locked on wake
+  - [ ] `pkexec true` → nothin's AUTHENTICATION prompt; the right password works, CANCEL
+        cancels
+- [ ] Afterwards: `build/nothin kill`, then `dms run`
