@@ -24,6 +24,11 @@ type Config struct {
 	Wallpaper     Wallpaper `toml:"wallpaper" json:"wallpaper"`
 	Desktop       Desktop   `toml:"desktop" json:"desktop"`
 	Weather       Weather   `toml:"weather" json:"weather"`
+	Launcher      Launcher  `toml:"launcher" json:"launcher"`
+}
+
+type Launcher struct {
+	SearchURL string `toml:"search_url" json:"search_url"` // %s becomes the query
 }
 
 type General struct {
@@ -58,6 +63,7 @@ func Defaults() Config {
 			System:    slices.Clone(systemNames),
 			Positions: map[string][]float64{},
 		},
+		Launcher: Launcher{SearchURL: "https://duckduckgo.com/?q=%s"},
 	}
 }
 
@@ -131,5 +137,11 @@ func (c Config) validate() (path, msg string) {
 	if p, m := c.Wallpaper.validate(); p != "" {
 		return p, m
 	}
-	return c.Desktop.validate()
+	if p, m := c.Desktop.validate(); p != "" {
+		return p, m
+	}
+	if u := c.Launcher.SearchURL; !strings.Contains(u, "%s") || !(strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")) {
+		return "launcher.search_url", `must be an http(s) address with %s where the query goes`
+	}
+	return "", ""
 }

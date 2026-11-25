@@ -19,6 +19,7 @@ import (
 	"github.com/Mauray-Jain/nothin-qs/internal/backlight"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
+	"github.com/Mauray-Jain/nothin-qs/internal/files"
 	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
 	"github.com/Mauray-Jain/nothin-qs/internal/weather"
 )
@@ -116,6 +117,7 @@ func Run(shellDir string, embedded fs.FS, dev, notifications bool, stderr io.Wri
 	go sampleSystem(ctx, h)
 	go followWeather(ctx, h, log)
 	go followBacklight(ctx, h)
+	go indexFiles(ctx, h)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -239,6 +241,25 @@ func followBacklight(ctx context.Context, h *hub) {
 			last = v
 			h.publish("brightness", map[string]any{"type": "brightness", "brightness": v})
 		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}
+
+// indexFiles keeps the home folder index for the launcher's file search
+// fresh: at start and every 10 minutes.
+func indexFiles(ctx context.Context, h *hub) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	t := time.NewTicker(10 * time.Minute)
+	defer t.Stop()
+	for {
+		h.setFileIndex(files.Index(home, 100000))
 		select {
 		case <-ctx.Done():
 			return

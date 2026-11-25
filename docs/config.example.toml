@@ -65,3 +65,7 @@ positions = {}
 # A place name ("Pune") or "lat,lon" ("18.52,73.86"). Empty looks up your
 # location from your IP address once at start.
 location = ""
+
+[launcher]
+# Web search for "?query" in the launcher; %s is replaced by the query.
+search_url = "https://duckduckgo.com/?q=%s"

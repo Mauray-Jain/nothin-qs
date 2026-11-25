@@ -16,6 +16,7 @@ import (
 
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/config"
+	"github.com/Mauray-Jain/nothin-qs/internal/files"
 	"github.com/Mauray-Jain/nothin-qs/internal/usage"
 	"github.com/fsnotify/fsnotify"
 )
@@ -39,6 +40,7 @@ type hub struct {
 	latest  map[string]any        // last published message of each type
 	order   []string              // types in the order first published
 	wm      compositor.Compositor // nil until detected
+	files   []string              // the home folder index for file search
 	clients map[net.Conn]bool
 }
 
@@ -147,6 +149,20 @@ func (h *hub) action(name string, id uint64) error {
 	return fmt.Errorf("unknown action %q", name)
 }
 
+func (h *hub) setFileIndex(idx []string) {
+	h.mu.Lock()
+	h.files = idx
+	h.mu.Unlock()
+}
+
+// find answers a launcher file search; seq lets the shell drop stale replies.
+func (h *hub) find(query string, seq int) any {
+	h.mu.Lock()
+	idx := h.files
+	h.mu.Unlock()
+	return map[string]any{"type": "files", "seq": seq, "query": query, "results": files.Search(idx, query, 20)}
+}
+
 // launch records a launcher entry being used and publishes the new scores.
 func (h *hub) launch(id string) error {
 	if id == "" {
@@ -248,6 +264,8 @@ func (h *hub) handle(c net.Conn) {
 			Action string          `json:"action"`
 			ID     uint64          `json:"id"`
 			Entry  string          `json:"entry"`
+			Query  string          `json:"query"`
+			Seq    int             `json:"seq"`
 		}
 		if json.Unmarshal(s.Bytes(), &in) != nil {
 			continue
@@ -260,6 +278,11 @@ func (h *hub) handle(c net.Conn) {
 			err = h.action(in.Action, in.ID)
 		case "launch":
 			err = h.launch(in.Entry)
+		case "find":
+			line, _ := json.Marshal(h.find(in.Query, in.Seq))
+			h.mu.Lock()
+			c.Write(append(line, '\n'))
+			h.mu.Unlock()
 		}
 		if err != nil {
 			line, _ := json.Marshal(errorMsg(err.Error()))

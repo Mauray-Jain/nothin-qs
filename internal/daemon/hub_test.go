@@ -294,3 +294,24 @@ func TestHubRecordsLaunches(t *testing.T) {
 		t.Fatalf("launcher.json: %s, %v", b, err)
 	}
 }
+
+// A find request is answered to the asking client only, with its seq.
+func TestHubFind(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.setFileIndex([]string{"/home/a/Documents/report.pdf", "/home/a/notes.txt"})
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+	c.send(`{"type":"find","query":"rep","seq":7}`)
+	line := c.raw()
+	if !strings.Contains(line, `"type":"files"`) || !strings.Contains(line, `"seq":7`) || !strings.Contains(line, "report.pdf") || strings.Contains(line, "notes") {
+		t.Fatalf("find reply: %s", line)
+	}
+}
