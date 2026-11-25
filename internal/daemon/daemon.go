@@ -19,6 +19,7 @@ import (
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
 	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
+	"github.com/Mauray-Jain/nothin-qs/internal/weather"
 )
 
 // RuntimeDir holds nothin.pid, qs.pid and nothin.sock.
@@ -111,6 +112,7 @@ func Run(shellDir string, embedded fs.FS, dev bool, stderr io.Writer) error {
 	}()
 	go followCompositor(ctx, h, log)
 	go sampleSystem(ctx, h)
+	go followWeather(ctx, h, log)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -178,6 +180,40 @@ func sampleSystem(ctx context.Context, h *hub) {
 	defer t.Stop()
 	for {
 		h.publish("system", map[string]any{"type": "system", "stats": s.Sample("/")})
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}
+
+// followWeather publishes the weather for weather.location: at start, when
+// the setting changes, every 15 minutes, and a minute after a failure.
+func followWeather(ctx context.Context, h *hub, log io.Writer) {
+	c := weather.NewClient()
+	var location, lastErr string
+	var next time.Time
+	t := time.NewTicker(30 * time.Second)
+	defer t.Stop()
+	for {
+		h.mu.Lock()
+		loc := h.good.Weather.Location
+		h.mu.Unlock()
+		if loc != location || time.Now().After(next) {
+			location = loc
+			w, err := c.Fetch(loc)
+			if err != nil {
+				next = time.Now().Add(time.Minute)
+				if err.Error() != lastErr {
+					fmt.Fprintln(log, "nothin: weather:", err)
+					lastErr = err.Error()
+				}
+			} else {
+				next, lastErr = time.Now().Add(15*time.Minute), ""
+				h.publish("weather", map[string]any{"type": "weather", "weather": w})
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return
