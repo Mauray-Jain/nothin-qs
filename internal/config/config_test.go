@@ -43,6 +43,22 @@ func TestLoad(t *testing.T) {
 		{name: "dot size too small", doc: "[wallpaper]\ndot_size = 1\n", wantLine: 2, wantErr: "wallpaper.dot_size"},
 		{name: "light out of range", doc: "[wallpaper]\nlight = 101\n", wantLine: 2, wantErr: "wallpaper.light"},
 		{name: "bad override", doc: "[wallpaper.monitors.\"DP-1\"]\nlight = -5\n", wantLine: 2, wantErr: "wallpaper.monitors.DP-1.light"},
+		{name: "desktop defaults", doc: "",
+			check: func(c Config) bool {
+				d := c.Desktop
+				return d.Layout == "grid" && d.HeroClock && d.Greeting &&
+					reflect.DeepEqual(d.Widgets, []string{"weather", "calendar", "player", "system"}) &&
+					reflect.DeepEqual(d.System, []string{"cpu", "memory", "disk", "temperature"}) &&
+					d.Positions != nil && d.Monitors != nil && c.Weather.Location == ""
+			}},
+		{name: "free positions", doc: "[desktop]\nlayout = \"free\"\npositions = { weather = [0.7, 0.1] }\n",
+			check: func(c Config) bool { p := c.Desktop.Positions["weather"]; return len(p) == 2 && p[0] == 0.7 }},
+		{name: "unknown widget", doc: "[desktop]\nwidgets = [\"weather\", \"stocks\"]\n", wantLine: 2, wantErr: "stocks"},
+		{name: "duplicate widget", doc: "[desktop]\nwidgets = [\"player\", \"player\"]\n", wantLine: 2, wantErr: "twice"},
+		{name: "unknown system item", doc: "[desktop]\nsystem = [\"gpu\"]\n", wantLine: 2, wantErr: "gpu"},
+		{name: "bad layout", doc: "[desktop]\nlayout = \"masonry\"\n", wantLine: 2, wantErr: "desktop.layout"},
+		{name: "position off screen", doc: "[desktop]\npositions = { player = [1.5, 0] }\n", wantLine: 2, wantErr: "desktop.positions"},
+		{name: "position for unknown widget", doc: "[desktop]\npositions = { stocks = [0, 0] }\n", wantLine: 2, wantErr: "stocks"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},

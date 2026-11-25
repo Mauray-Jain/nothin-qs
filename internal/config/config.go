@@ -22,6 +22,8 @@ type Config struct {
 	Theme         Theme     `toml:"theme" json:"theme"`
 	Rail          Rail      `toml:"rail" json:"rail"`
 	Wallpaper     Wallpaper `toml:"wallpaper" json:"wallpaper"`
+	Desktop       Desktop   `toml:"desktop" json:"desktop"`
+	Weather       Weather   `toml:"weather" json:"weather"`
 }
 
 type General struct {
@@ -49,6 +51,12 @@ func Defaults() Config {
 		Wallpaper: Wallpaper{
 			Dir: "~/Pictures/Wallpapers", Effect: "dots", DotSize: 17, Light: 50,
 			Monitors: map[string]WallpaperOverride{},
+		},
+		Desktop: Desktop{
+			Monitors: []string{}, Layout: "grid", HeroClock: true, Greeting: true,
+			Widgets:   slices.Clone(widgetNames),
+			System:    slices.Clone(systemNames),
+			Positions: map[string][]float64{},
 		},
 	}
 }
@@ -120,5 +128,8 @@ func (c Config) validate() (path, msg string) {
 	case !slices.Contains([]string{"left", "right", "top", "bottom"}, c.Rail.Position):
 		return "rail.position", `must be "left", "right", "top" or "bottom"`
 	}
-	return c.Wallpaper.validate()
+	if p, m := c.Wallpaper.validate(); p != "" {
+		return p, m
+	}
+	return c.Desktop.validate()
 }

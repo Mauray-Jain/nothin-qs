@@ -43,3 +43,25 @@ light = 50
 #   [wallpaper.monitors."HDMI-A-1"]
 #   effect = "color"
 monitors = {}
+
+[desktop]
+# Monitors to show the desktop widgets on, by name. Empty means all.
+monitors = []
+# "grid" snaps widgets to a 3×3 grid in the order below; "free" uses positions.
+layout = "grid"
+# The big dot clock and the greeting under it.
+hero_clock = true
+greeting = true
+# Widgets to show: any of "weather", "calendar", "player", "system".
+widgets = ["weather", "calendar", "player", "system"]
+# Rows of the system widget: any of "cpu", "memory", "disk", "temperature".
+system = ["cpu", "memory", "disk", "temperature"]
+# Free layout only: where each widget's top-left corner goes, as [x, y] fractions
+# of the screen (0 to 1). Widgets without a position keep their grid spot.
+# Example: positions = { weather = [0.7, 0.08], player = [0.7, 0.4] }
+positions = {}
+
+[weather]
+# A place name ("Pune") or "lat,lon" ("18.52,73.86"). Empty looks up your
+# location from your IP address once at start.
+location = ""
