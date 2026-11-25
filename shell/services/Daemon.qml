@@ -16,6 +16,8 @@ Socket {
             const msg = JSON.parse(line)
             if (msg.type === "config" || msg.type === "error")
                 Config.receive(msg)
+            else if (msg.type === "compositor")
+                Compositor.receive(msg)
         }
     }
 

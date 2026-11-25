@@ -3,10 +3,12 @@ import Quickshell
 import Quickshell.Io
 import "../../core"
 import "../../components"
+import "../../services"
 
 // Development page: the config round trip (1.1) and the design kit (1.2).
 //   nothin ipc testpage toggle    show or hide it
 //   nothin ipc testpage name      print general.name as the shell sees it
+//   nothin ipc testpage desktop   print outputs, workspaces and focus as the shell sees them
 Scope {
     id: root
 
@@ -16,6 +18,15 @@ Scope {
         target: "testpage"
         function toggle(): void { root.shown = !root.shown }
         function name(): string { return Config.values.general?.name ?? "" }
+        function desktop(): string {
+            const outs = Compositor.outputs.map(o => {
+                const ws = Compositor.workspacesOn(o.name)
+                    .map(w => w.index + (w.focused ? "*" : w.active ? "·" : "") + (w.urgent ? "!" : ""))
+                return o.name + (o.name === Compositor.focusedOutput ? "*" : "") + " [" + ws.join(" ") + "]"
+            })
+            const w = Compositor.focusedWindow
+            return outs.join(" | ") + " | focus: " + (w ? w.app_id + " \"" + w.title + "\"" : "none")
+        }
     }
 
     Variants {

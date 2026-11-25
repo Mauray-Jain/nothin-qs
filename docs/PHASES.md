@@ -106,3 +106,50 @@ Laptop check (**untested on hardware**): `build/nothin ipc testpage toggle`
       none on the right (black)
 - [ ] Toggle, GRID/FREE, CAFFEINE pill and the knob respond to mouse, touch and Tab + keys
 - [ ] Change `accent` in config.toml → the knob ring turns that colour when focused
+
+## 1.3 Compositor layer
+
+Done when: workspace and focus changes log correctly on every connected output.
+
+How it fits together:
+- `internal/compositor`: `Detect` asks the kernel who owns the `$WAYLAND_DISPLAY` socket
+  (`SO_PEERCRED` → `/proc/<pid>/comm`), then falls back to `NIRI_SOCKET`, Hyprland's
+  instance signature and `XDG_CURRENT_DESKTOP`. `general.compositor` overrides it.
+  `Compositor` (the one deliberate interface, PLAN #23) has a single method, `Run`, and a
+  compositor-neutral `State`.
+- `internal/compositor/niri`: follows `niri msg --json event-stream`. Outputs come from
+  `niri msg --json outputs` at start and on every `WorkspacesChanged` (that's how a
+  hotplug shows up). Event shapes checked against the `niri-ipc` 26.4.0 crate source.
+- The daemon broadcasts `{"type":"compositor","state":{…}}` and logs one line per visible
+  change, e.g. `niri: HDMI-A-1* [1*!] | eDP-1 [1 2·] | focus: thunderbird "Inbox"`
+  (`*` focused, `·` active, `!` urgent; `*` after an output name marks the focused output).
+- QML: `services/Compositor.qml` (plain singleton: `focusedOutput`, `outputs`,
+  `workspaces`, `windows`, `focusedWindow`, `workspacesOn(output)`).
+
+Automated: `go test ./...` (detection, including a real socket owner lookup; a replay of
+`testdata/events.jsonl` against a hand-written `testdata/state.json`; activate without
+focus; focus to nothing; ignored and unknown events; outputs parsing; the log summary;
+the hub sending state to new and late clients). `qmltestrunner`: the Compositor singleton.
+
+Checked in the container: the built binary against a stand-in `niri` replaying the
+fixture. The log showed each change; a late socket client got the final state with both
+outputs.
+
+Not done yet: no actions (switching workspaces) go to niri. The rail needs them in 1.4.
+
+Laptop check (**untested on hardware**):
+
+```bash
+build/nothin run --dev .
+tail -f ~/.local/state/nothin/nothin.log      # in a second terminal
+build/nothin ipc testpage desktop
+```
+
+- [ ] The log says `nothin: compositor niri`
+- [ ] Switching workspaces and focusing windows each add one `niri:` line that matches
+      what you see
+- [ ] `nothin ipc testpage desktop` prints the same outputs, workspaces and focus
+- [ ] Opening and closing the overview doesn't break anything (it's tracked, not logged)
+- [ ] With an external monitor: plug it in → its workspaces appear under its name, and
+      focus moves between outputs correctly (**multi-monitor untested** until a second
+      screen is available, PLAN.md §5)
