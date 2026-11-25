@@ -6,6 +6,7 @@ DotText 1.0 DotText.qml
 Halftone 1.0 Halftone.qml
 Icon 1.0 Icon.qml
 Knob 1.0 Knob.qml
+Picker 1.0 Picker.qml
 Pill 1.0 Pill.qml
 Segmented 1.0 Segmented.qml
 Toggle 1.0 Toggle.qml

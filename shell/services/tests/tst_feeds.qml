@@ -28,4 +28,13 @@ TestCase {
         compare(Weather.now.place, "Pune")
         compare(Weather.now.icon, "partly_cloudy_night")
     }
+
+    SignalSpy { id: recorded; target: Usage; signalName: "recordRequested" }
+
+    function test_usage() {
+        Usage.receive({ type: "usage", scores: { "firefox.desktop": 8 } })
+        compare(Usage.scores["firefox.desktop"], 8)
+        Usage.launched("kitty.desktop")
+        compare(recorded.signalArguments[0][0], "kitty.desktop")
+    }
 }

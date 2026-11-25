@@ -13,6 +13,7 @@ QtObject {
     signal actionRequested(string action, int id)
 
     function focusWorkspace(id) { actionRequested("focus-workspace", id) }
+    function focusWindow(id) { actionRequested("focus-window", id) }
     function toggleOverview() { actionRequested("toggle-overview", 0) }
     function quit() { actionRequested("quit", 0) } // log out; niri asks to confirm
 

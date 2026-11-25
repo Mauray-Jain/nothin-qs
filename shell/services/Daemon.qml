@@ -24,6 +24,8 @@ Socket {
                 Weather.receive(msg)
             else if (msg.type === "brightness")
                 Brightness.receive(msg)
+            else if (msg.type === "usage")
+                Usage.receive(msg)
         }
     }
 
@@ -35,6 +37,11 @@ Socket {
     property Connections writes: Connections {
         target: Config
         function onSetRequested(key, value) { socket.send({ type: "set", path: key, value: value }) }
+    }
+
+    property Connections launches: Connections {
+        target: Usage
+        function onRecordRequested(id) { socket.send({ type: "launch", entry: id }) }
     }
 
     property Connections actions: Connections {
