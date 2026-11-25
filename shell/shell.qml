@@ -5,6 +5,7 @@ import "modules/toast"
 import "modules/testpage"
 import "modules/rail"
 import "modules/wallpaper"
+import "modules/desktop"
 import "core"
 
 ShellRoot {
@@ -16,6 +17,7 @@ ShellRoot {
 
         Scope {
             Wallpaper {}
+            Desktop {}
             Toast {}
             TestPage {}
             Rail {}

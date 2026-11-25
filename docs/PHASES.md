@@ -255,3 +255,68 @@ look for nothin's at the edges while switching workspaces.
 - [ ] With a second monitor: `[wallpaper.monitors."<name>"]` with `effect = "none"` →
       only that monitor shows the plain photo
 - [ ] Switching workspaces and opening the overview doesn't flicker the wallpaper
+
+## 1.6 Desktop home
+
+Done when: a side-by-side screenshot with the reference frame, reviewed by the user;
+widgets chosen from config; free mode renders positions from config.
+
+How it fits together:
+- `[desktop]`: `monitors`, `layout` (grid | free), `hero_clock`, `greeting`, `widgets`,
+  `system` (user decision: CPU, memory, disk, temperature, each switchable), `positions`.
+  `[weather]`: `location`.
+- Go: `internal/sysstat` (CPU from /proc/stat with a 30-sample history, memory as
+  MemTotal − MemAvailable, disk via statfs on /, temperature from hwmon or thermal zones)
+  is published every 2 s. `internal/weather` (Open-Meteo; place names through its
+  geocoding API; IP lookup when `location` is empty) is published every 15 min and on
+  change. The hub replays the latest of each message type to a new shell.
+- QML: `SysStats` and `Weather` singletons; `modules/desktop/` has `Hero`, the four cards,
+  `Calendar.js` and `Layout.js`, and `Desktop.qml`: one bottom-layer window per monitor
+  (namespace `nothin-desktop`), above the wallpaper and below windows. It respects the
+  rail's space, and its input mask covers only the widget cards.
+
+Decided unattended (change any of these by asking):
+- Grid: a 3×3 grid inside a 30 px margin. The hero (clock, date, greeting) takes the two
+  top-left cells; widgets fill the remaining cells in `widgets` order. Free mode: a widget
+  with a position is one cell in size, placed at that fraction of the screen and kept on
+  screen; widgets without one, and the hero, keep their grid spots.
+- The hero clock follows `rail.clock_24h`; there is no separate setting.
+- Greeting: morning 5–12, afternoon 12–17, evening 17–22, night otherwise, plus
+  `general.name` when set.
+- Weather in °C and km/h. With `location` empty, nothin sends your IP address to
+  ipinfo.io once per refresh to find your city. Refreshes every 15 min, retries a minute
+  after a failure, logs each new error once.
+- Calendar starts on Monday; today is an accent circle.
+- System: memory and disk as small dot rings, CPU as a dotted sparkline, temperature
+  turns accent from 90 °C. Disk is the root filesystem.
+- Player: the playing MPRIS player, else the first; art in greyscale; play/pause in accent.
+
+Automated: `go test ./...` (settings validation; sysstat against fixture trees: CPU
+idle/total and usage, memory, hwmon preferred over thermal zones, a CPU sensor over an
+nvme one, no sensor; weather against a local HTTP server: place name, lat,lon, IP lookup,
+unknown place, WMO codes; the hub replaying the latest of each type). `qmltestrunner`:
+long date with ISO week, greeting, the feeds, calendar grids (incl. leap February), grid
+and free placement, the cards' content rules.
+
+Checked in the container: a screenshot of the hero and the weather, calendar and system
+cards with sample data. It caught the hero colon sitting too close to the digits, now fixed.
+Not checked: real Open-Meteo replies (the container's network blocks it), the player card
+and the desktop window (Quickshell only).
+
+Laptop check (**untested on hardware**):
+
+- [ ] Hero top-left: `16:55` style dot clock with a blinking colon, the long date, and
+      "GOOD …, NAME"
+- [ ] Weather card: your city (or `location`), temperature, icon, condition, low/high
+      within a minute of start. With `location = "Tokyo"` → Tokyo within 30 s
+- [ ] Calendar: this month, today in red
+- [ ] Player: play music → title, artist, art; the buttons work; play/pause is red
+- [ ] System: CPU % and sparkline move; memory, disk and temperature look right.
+      `system = ["cpu"]` → only CPU
+- [ ] `widgets = ["player", "weather"]` → only those two, in that order
+- [ ] `layout = "free"` with `positions = { weather = [0.6, 0.6] }` → weather moves
+      there, the rest keep their spots
+- [ ] Clicking empty desktop areas still reaches whatever is below (nothing breaks);
+      windows cover the widgets
+- [ ] The widgets don't sit under the rail
+- [ ] Send a screenshot next to a frame of the video for the side-by-side review
