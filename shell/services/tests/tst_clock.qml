@@ -27,4 +27,18 @@ TestCase {
         wait(1100)
         verify(Clock.now > before)
     }
+
+    function test_long_date_with_iso_week() {
+        compare(Clock.formatLong(afternoon), "SATURDAY · 24 OCTOBER · WEEK 43")
+        compare(Clock.formatLong(midnight), "THURSDAY · 1 JANUARY · WEEK 1")
+        compare(Clock.formatLong(new Date(2027, 0, 1)), "FRIDAY · 1 JANUARY · WEEK 53")
+    }
+
+    function test_greeting_follows_the_hour() {
+        compare(Clock.greeting(new Date(2026, 0, 1, 6, 0)), "GOOD MORNING")
+        compare(Clock.greeting(new Date(2026, 0, 1, 12, 0)), "GOOD AFTERNOON")
+        compare(Clock.greeting(new Date(2026, 0, 1, 18, 30)), "GOOD EVENING")
+        compare(Clock.greeting(new Date(2026, 0, 1, 23, 0)), "GOOD NIGHT")
+        compare(Clock.greeting(new Date(2026, 0, 1, 3, 0)), "GOOD NIGHT")
+    }
 }

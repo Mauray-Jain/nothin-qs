@@ -18,6 +18,10 @@ Socket {
                 Config.receive(msg)
             else if (msg.type === "compositor")
                 Compositor.receive(msg)
+            else if (msg.type === "system")
+                SysStats.receive(msg)
+            else if (msg.type === "weather")
+                Weather.receive(msg)
         }
     }
 
