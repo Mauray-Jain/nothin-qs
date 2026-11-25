@@ -34,18 +34,18 @@ func TestQsIPCArgs(t *testing.T) {
 
 func TestRunFlags(t *testing.T) {
 	tests := []struct {
-		args          []string
-		dev           string
-		notifications bool
+		args      []string
+		dev       string
+		exclusive bool
 	}{
-		{nil, "", true},                      // installed: always the notification server
-		{[]string{"--dev", "."}, ".", false}, // next to DMS: off by default
-		{[]string{"--dev", ".", "--notifications"}, ".", true},
+		{nil, "", true},                      // installed: owns the session services
+		{[]string{"--dev", "."}, ".", false}, // next to DMS: leaves them to DMS
+		{[]string{"--dev", ".", "--exclusive"}, ".", true},
 	}
 	for _, tt := range tests {
-		dev, notif, err := runFlags(tt.args, io.Discard)
-		if err != nil || dev != tt.dev || notif != tt.notifications {
-			t.Errorf("runFlags(%q) = %q, %v, %v", tt.args, dev, notif, err)
+		dev, excl, err := runFlags(tt.args, io.Discard)
+		if err != nil || dev != tt.dev || excl != tt.exclusive {
+			t.Errorf("runFlags(%q) = %q, %v, %v", tt.args, dev, excl, err)
 		}
 	}
 }

@@ -6,7 +6,7 @@ import "../../core"
 import "../../services"
 import "Timeout.js" as Timeout
 
-// The notification server (only when NOTHIN_NOTIFICATIONS=1: one per session,
+// The notification server (only when NOTHIN_EXCLUSIVE=1: one per session,
 // and DMS has it under --dev), popups on the focused monitor, and the center.
 //   nothin ipc notifications toggle | clear
 Scope {
@@ -15,7 +15,7 @@ Scope {
     property var popups: []
 
     LazyLoader {
-        active: Quickshell.env("NOTHIN_NOTIFICATIONS") === "1"
+        active: Quickshell.env("NOTHIN_EXCLUSIVE") === "1"
 
         NotificationServer {
             keepOnReload: true

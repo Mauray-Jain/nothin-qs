@@ -19,10 +19,12 @@ import (
 const usage = `usage: nothin <command> [args]
 
 commands:
-  run [--dev DIR] [--notifications]
+  run [--dev DIR] [--exclusive]
                            start the shell (DIR: repo checkout, live-reloads QML).
-                           Under --dev the notification server is off (DMS has it)
-                           unless --notifications is given
+                           Under --dev, the one-per-session services (notification
+                           server, polkit agent, idle lock, lock before sleep,
+                           screensaver inhibit) stay off, leaving them to DMS,
+                           unless --exclusive is given
   restart                  restart qs under the running daemon
   kill                     stop nothin and the shell
   ipc <target> <fn> [args] call an IpcHandler in the shell
@@ -63,7 +65,7 @@ func Main(args []string, stderr io.Writer) int {
 }
 
 func run(args []string, stderr io.Writer) error {
-	dev, notifications, err := runFlags(args, stderr)
+	dev, exclusive, err := runFlags(args, stderr)
 	if err != nil {
 		return err
 	}
@@ -78,16 +80,16 @@ func run(args []string, stderr io.Writer) error {
 		}
 		shellDir = abs
 	}
-	return daemon.Run(shellDir, shell.FS, dev != "", notifications, stderr)
+	return daemon.Run(shellDir, shell.FS, dev != "", exclusive, stderr)
 }
 
-// runFlags parses `run` flags. The notification server is on unless --dev is
-// given without --notifications: only one can exist per session.
-func runFlags(args []string, stderr io.Writer) (dev string, notifications bool, err error) {
+// runFlags parses `run` flags. nothin owns the one-per-session services
+// unless --dev is given without --exclusive.
+func runFlags(args []string, stderr io.Writer) (dev string, exclusive bool, err error) {
 	fl := flag.NewFlagSet("run", flag.ContinueOnError)
 	fl.SetOutput(stderr)
 	fl.StringVar(&dev, "dev", "", "load QML from `DIR`/shell instead of the embedded copy")
-	n := fl.Bool("notifications", false, "with --dev: run the notification server too (stop DMS first)")
+	n := fl.Bool("exclusive", false, "with --dev: run the one-per-session services too (stop DMS first)")
 	if err := fl.Parse(args); err != nil {
 		return "", false, err
 	}

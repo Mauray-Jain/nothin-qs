@@ -19,9 +19,11 @@ import (
 	"github.com/Mauray-Jain/nothin-qs/internal/backlight"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
+	nothindbus "github.com/Mauray-Jain/nothin-qs/internal/dbus"
 	"github.com/Mauray-Jain/nothin-qs/internal/files"
 	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
 	"github.com/Mauray-Jain/nothin-qs/internal/weather"
+	godbus "github.com/godbus/dbus/v5"
 )
 
 // RuntimeDir holds nothin.pid, qs.pid and nothin.sock.
@@ -60,7 +62,7 @@ func writePID(name string, pid int) error {
 
 // Run supervises qs on shellDir until SIGINT or SIGTERM. SIGHUP restarts qs.
 // If shellDir is empty, the embedded shell is extracted and used.
-func Run(shellDir string, embedded fs.FS, dev, notifications bool, stderr io.Writer) error {
+func Run(shellDir string, embedded fs.FS, dev, exclusive bool, stderr io.Writer) error {
 	if pid, err := ReadPID("nothin.pid"); err == nil {
 		return fmt.Errorf("nothin is already running (pid %d)", pid)
 	}
@@ -131,8 +133,9 @@ func Run(shellDir string, embedded fs.FS, dev, notifications bool, stderr io.Wri
 	if dev {
 		env = append(env, "NOTHIN_DEV=1")
 	}
-	if notifications {
-		env = append(env, "NOTHIN_NOTIFICATIONS=1")
+	if exclusive {
+		env = append(env, "NOTHIN_EXCLUSIVE=1")
+		go followDBus(h, log)
 	}
 	start := func() *exec.Cmd {
 		cmd := exec.Command("qs", "-p", shellDir)
@@ -266,4 +269,22 @@ func indexFiles(ctx context.Context, h *hub) {
 		case <-t.C:
 		}
 	}
+}
+
+// followDBus runs the screensaver inhibit service and locks before sleep.
+// Each fails on its own (logged) if the bus or the name isn't available.
+func followDBus(h *hub, log io.Writer) {
+	if conn, err := godbus.ConnectSessionBus(); err != nil {
+		fmt.Fprintln(log, "nothin: session bus:", err)
+	} else if err := nothindbus.ServeScreenSaver(conn, func(in []nothindbus.Inhibitor) {
+		h.publish("inhibit", map[string]any{"type": "inhibit", "inhibitors": in})
+	}); err != nil {
+		fmt.Fprintln(log, "nothin: screensaver inhibit:", err)
+	}
+	locked, err := nothindbus.Logind(h.requestLock)
+	if err != nil {
+		fmt.Fprintln(log, "nothin: logind:", err)
+		return
+	}
+	h.setLockedChan(locked)
 }

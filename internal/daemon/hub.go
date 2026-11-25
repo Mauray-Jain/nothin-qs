@@ -23,9 +23,11 @@ import (
 
 // hub owns config.toml and talks to the shell over the socket in JSON lines.
 //
-// Out: {"type":"config","config":{…}}, {"type":"error","error":"…"}, and
+// Out: {"type":"config","config":{…}}, {"type":"error","error":"…"},
+// {"type":"lock"} (lock now; the shell answers {"type":"locked"}), and
 // published state: {"type":"compositor","state":{…}}, {"type":"system",…},
-// {"type":"weather",…}. A new client gets the latest of each straight away.
+// {"type":"weather",…}, {"type":"inhibit","inhibitors":[…]}. A new client
+// gets the latest published one of each type straight away.
 // In:  {"type":"set","path":"theme.accent","value":"#ffffff"} and
 //
 //	{"type":"action","action":"focus-workspace","id":3} (also
@@ -41,6 +43,7 @@ type hub struct {
 	order   []string              // types in the order first published
 	wm      compositor.Compositor // nil until detected
 	files   []string              // the home folder index for file search
+	locked  chan<- struct{}       // told when the shell reports it locked
 	clients map[net.Conn]bool
 }
 
@@ -147,6 +150,20 @@ func (h *hub) action(name string, id uint64) error {
 		return wm.Quit()
 	}
 	return fmt.Errorf("unknown action %q", name)
+}
+
+func (h *hub) setLockedChan(ch chan<- struct{}) {
+	h.mu.Lock()
+	h.locked = ch
+	h.mu.Unlock()
+}
+
+// requestLock asks the shell to lock the screen. It is broadcast, not
+// published, so a shell that connects later doesn't lock on a stale request.
+func (h *hub) requestLock() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.broadcast(map[string]any{"type": "lock"})
 }
 
 func (h *hub) setFileIndex(idx []string) {
@@ -278,6 +295,16 @@ func (h *hub) handle(c net.Conn) {
 			err = h.action(in.Action, in.ID)
 		case "launch":
 			err = h.launch(in.Entry)
+		case "locked":
+			h.mu.Lock()
+			ch := h.locked
+			h.mu.Unlock()
+			if ch != nil {
+				select {
+				case ch <- struct{}{}:
+				default:
+				}
+			}
 		case "find":
 			line, _ := json.Marshal(h.find(in.Query, in.Seq))
 			h.mu.Lock()

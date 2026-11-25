@@ -327,8 +327,8 @@ Done when: nothin's notifications and OSD work with DMS stopped.
 
 How it fits together:
 - Only one notification server can exist per session. `nothin run` always runs it;
-  `nothin run --dev` runs it only with `--notifications` (the shell sees
-  `NOTHIN_NOTIFICATIONS=1`). Stop DMS first: `dms kill`.
+  `nothin run --dev` runs it only with `--exclusive` (the shell sees
+  `NOTHIN_EXCLUSIVE=1`). Stop DMS first: `dms kill`.
 - `modules/notifications/Notifications.qml`: the server, up to 4 popups top-right on the
   focused monitor, and a center on the right listing everything since start (clear,
   close). `Notifs` singleton holds the list and unread count; the rail's bell turns red
@@ -350,7 +350,7 @@ Decided unattended (change any of these by asking):
 - Volume and brightness steps are 5%. Volume up/down also unmutes.
 - With `acpi_video*` and another backlight present, the other one is read.
 
-Automated: `go test ./...` (the `--notifications` rule, backlight reading incl. device
+Automated: `go test ./...` (the `--exclusive` rule, backlight reading incl. device
 choice). `qmltestrunner`: Notifs (order, unread, center, clear), Osd show/hide, Brightness
 feed and steps (only changes after the first reading show the OSD), DotBar, popup
 timeouts, NotificationCard (content, action buttons, close), `Compositor.focusedScreen`.
@@ -375,7 +375,7 @@ Mod+N                 { spawn "nothin" "ipc" "notifications" "toggle"; }
 
 ```bash
 dms kill
-build/nothin run --dev . --notifications
+build/nothin run --dev . --exclusive
 notify-send "Hello" "from nothin"
 notify-send -u critical "Battery" "5% left"
 notify-send -t 0 "Sticky" "never expires"
@@ -389,7 +389,7 @@ notify-send -t 0 "Sticky" "never expires"
 - [ ] Volume keys (and scrolling on the rail's volume icon) show the volume OSD; mute
       shows MUTE; brightness keys show the brightness OSD; media keys control the player
 - [ ] Break config.toml → the toast appears on the monitor you're focused on
-- [ ] Without `--notifications` (and with DMS running): DMS still gets the notifications
+- [ ] Without `--exclusive` (and with DMS running): DMS still gets the notifications
 - [ ] Afterwards: `build/nothin kill`, then `dms run`
 
 ## 1.8 Launcher core and clipboard

@@ -315,3 +315,39 @@ func TestHubFind(t *testing.T) {
 		t.Fatalf("find reply: %s", line)
 	}
 }
+
+// The daemon asks the shell to lock; the shell's "locked" reaches the waiter.
+func TestHubLockRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	locked := make(chan struct{}, 1)
+	h.setLockedChan(locked)
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+
+	h.requestLock()
+	if line := c.raw(); !strings.Contains(line, `"type":"lock"`) {
+		t.Fatalf("lock request: %s", line)
+	}
+	c.send(`{"type":"locked"}`)
+	select {
+	case <-locked:
+	case <-time.After(2 * time.Second):
+		t.Fatal("locked never arrived")
+	}
+
+	// A lock request is not replayed to a shell that connects later.
+	c2 := dial(t, sock)
+	c2.next() // config
+	c2.conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+	if c2.r.Scan() && strings.Contains(c2.r.Text(), `"type":"lock"`) {
+		t.Fatal("stale lock request replayed")
+	}
+}
