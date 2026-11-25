@@ -25,3 +25,21 @@ position = "left"
 monitors = []
 # 24-hour clock. false shows 12-hour with AM/PM.
 clock_24h = true
+
+[wallpaper]
+# Folder of wallpapers. "~" is your home folder.
+dir = "~/Pictures/Wallpapers"
+# Image to show: a name in dir, or a full path. Empty shows the newest image in dir.
+file = ""
+# "dots" (halftone in the theme's colours), "color" (halftone in the image's
+# colours), "mono" (greyscale image) or "none" (the image as it is).
+effect = "dots"
+# Size of one halftone dot cell in pixels, 4 to 64.
+dot_size = 17
+# Brightness of the halftone, 0 to 100. 50 leaves it as it is.
+light = 50
+# Per-monitor overrides of file, effect, dot_size and light. Replace the empty
+# table with sections like:
+#   [wallpaper.monitors."HDMI-A-1"]
+#   effect = "color"
+monitors = {}

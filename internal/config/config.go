@@ -17,10 +17,11 @@ import (
 const Version = 1
 
 type Config struct {
-	ConfigVersion int     `toml:"config_version" json:"config_version"`
-	General       General `toml:"general" json:"general"`
-	Theme         Theme   `toml:"theme" json:"theme"`
-	Rail          Rail    `toml:"rail" json:"rail"`
+	ConfigVersion int       `toml:"config_version" json:"config_version"`
+	General       General   `toml:"general" json:"general"`
+	Theme         Theme     `toml:"theme" json:"theme"`
+	Rail          Rail      `toml:"rail" json:"rail"`
+	Wallpaper     Wallpaper `toml:"wallpaper" json:"wallpaper"`
 }
 
 type General struct {
@@ -45,6 +46,10 @@ func Defaults() Config {
 		General:       General{Compositor: "auto"},
 		Theme:         Theme{Accent: "#d71921", Background: "#000000"},
 		Rail:          Rail{Position: "left", Monitors: []string{}, Clock24h: true},
+		Wallpaper: Wallpaper{
+			Dir: "~/Pictures/Wallpapers", Effect: "dots", DotSize: 17, Light: 50,
+			Monitors: map[string]WallpaperOverride{},
+		},
 	}
 }
 
@@ -115,5 +120,5 @@ func (c Config) validate() (path, msg string) {
 	case !slices.Contains([]string{"left", "right", "top", "bottom"}, c.Rail.Position):
 		return "rail.position", `must be "left", "right", "top" or "bottom"`
 	}
-	return "", ""
+	return c.Wallpaper.validate()
 }

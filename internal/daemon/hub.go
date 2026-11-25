@@ -75,6 +75,8 @@ func (h *hub) load(b []byte) {
 		h.err = "config.toml " + err.Error()
 		return
 	}
+	home, _ := os.UserHomeDir()
+	c.Wallpaper.Resolve(home)
 	h.good, h.err = c, ""
 }
 

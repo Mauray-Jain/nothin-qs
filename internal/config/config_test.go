@@ -28,6 +28,21 @@ func TestLoad(t *testing.T) {
 			}},
 		{name: "rail monitors", doc: "[rail]\nmonitors = [\"eDP-1\", \"HDMI-A-1\"]\n",
 			check: func(c Config) bool { return len(c.Rail.Monitors) == 2 && c.Rail.Monitors[1] == "HDMI-A-1" }},
+		{name: "wallpaper defaults", doc: "",
+			check: func(c Config) bool {
+				w := c.Wallpaper
+				return w.Dir == "~/Pictures/Wallpapers" && w.File == "" && w.Effect == "dots" &&
+					w.DotSize == 17 && w.Light == 50 && w.Monitors != nil
+			}},
+		{name: "wallpaper per-monitor override", doc: "[wallpaper.monitors.\"HDMI-A-1\"]\neffect = \"none\"\n",
+			check: func(c Config) bool {
+				o := c.Wallpaper.Monitors["HDMI-A-1"]
+				return o.Effect != nil && *o.Effect == "none" && o.File == nil
+			}},
+		{name: "bad effect", doc: "[wallpaper]\neffect = \"blur\"\n", wantLine: 2, wantErr: "wallpaper.effect"},
+		{name: "dot size too small", doc: "[wallpaper]\ndot_size = 1\n", wantLine: 2, wantErr: "wallpaper.dot_size"},
+		{name: "light out of range", doc: "[wallpaper]\nlight = 101\n", wantLine: 2, wantErr: "wallpaper.light"},
+		{name: "bad override", doc: "[wallpaper.monitors.\"DP-1\"]\nlight = -5\n", wantLine: 2, wantErr: "wallpaper.monitors.DP-1.light"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},
@@ -128,6 +143,9 @@ func keys(t reflect.Type, prefix []string) [][]string {
 	var out [][]string
 	for i := range t.NumField() {
 		f := t.Field(i)
+		if f.Tag.Get("toml") == "-" {
+			continue
+		}
 		p := append(slices.Clone(prefix), f.Tag.Get("toml"))
 		if f.Type.Kind() == reflect.Struct {
 			out = append(out, keys(f.Type, p)...)

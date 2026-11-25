@@ -224,3 +224,18 @@ func TestHubActions(t *testing.T) {
 		t.Fatalf("unknown action: %+v", m)
 	}
 }
+
+func TestHubResolvesWallpaper(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	os.WriteFile(filepath.Join(home, "w.png"), []byte("x"), 0o644)
+	path := filepath.Join(home, "config.toml")
+	os.WriteFile(path, []byte("[wallpaper]\nfile = \"~/w.png\"\n"), 0o644)
+	h, err := newHub(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := h.good.Wallpaper.Path; got != filepath.Join(home, "w.png") {
+		t.Errorf("wallpaper path = %q", got)
+	}
+}
