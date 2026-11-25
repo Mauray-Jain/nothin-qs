@@ -4,6 +4,7 @@ import "services"
 import "modules/toast"
 import "modules/testpage"
 import "modules/rail"
+import "modules/wallpaper"
 import "core"
 
 ShellRoot {
@@ -14,6 +15,7 @@ ShellRoot {
         active: Config.loaded
 
         Scope {
+            Wallpaper {}
             Toast {}
             TestPage {}
             Rail {}

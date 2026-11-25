@@ -210,3 +210,48 @@ up, so both bars show.
       live; on top/bottom the app title shows beside its icon
 - [ ] `monitors = ["eDP-1"]` → the rail shows only there (with a second monitor)
 - [ ] If network or Bluetooth is missing, run `qs --version` and send it with the log
+
+## 1.5 Wallpaper
+
+Done when: the wallpaper renders as dots; effect settings apply live.
+
+How it fits together:
+- `[wallpaper]`: `dir`, `file`, `effect` (dots | color | mono | none), `dot_size` (4–64),
+  `light` (0–100), and `[wallpaper.monitors."<name>"]` overrides of file, effect,
+  dot_size and light (user decision: a `file` setting, newest image in `dir` when empty).
+- The daemon resolves the image into `wallpaper.path` (and each override's `path`), so
+  the shell never lists folders.
+- `modules/wallpaper/Wallpaper.qml`: a background-layer window per monitor (namespace
+  `nothin-wallpaper`). `Look.js` merges the shared settings with that monitor's override.
+  The image goes through `ShaderEffectSource` into `Halftone`; `color` makes the dots take
+  the image's colours (new `colorMode` in `halftone.frag`); `mono` is a greyscale image.
+
+Decided unattended (change any of these by asking):
+- With `file` empty, the newest image is picked when the config loads. A new file in the
+  folder shows after the next config save or `nothin restart`, not instantly.
+- The wallpaper is on every monitor. It has no `monitors` filter because
+  `wallpaper.monitors` already holds the per-monitor overrides.
+- `light` 50 leaves brightness as it is; 0 darkens fully, 100 brightens fully.
+- Images are decoded at screen size (`sourceSize`) to keep memory down.
+- `color` dots sit on the theme background, not on a dimmed copy of the image.
+
+Automated: `go test ./...` (settings, ranges, override validation with line numbers,
+image choice: newest image, relative/absolute/`~` file, override paths, empty folder;
+the daemon resolving `path`). `qmltestrunner`: `Look.forOutput` merging, Halftone's
+colour switch. `make check-shaders`: the new `.qsb` matches its source.
+
+Not automated: the shader's pixels (no GPU in the container).
+
+Laptop check (**untested on hardware**). DMS draws its own wallpaper on the same layer,
+so under `--dev` either one can end up on top. Hide DMS's wallpaper for this check, or
+look for nothin's at the edges while switching workspaces.
+
+- [ ] With images in `~/Pictures/Wallpapers` and no `file` set → the newest one, as white
+      dots on black
+- [ ] `file = "<name>"` → that image; `effect = "color"` → coloured dots; `"mono"` →
+      greyscale photo; `"none"` → the photo as is; each applies within a second of saving
+- [ ] `dot_size = 8` → finer dots; `light = 80` → bigger dots; `light = 20` → smaller
+- [ ] A typo like `effect = "blur"` → toast with the line; the wallpaper doesn't change
+- [ ] With a second monitor: `[wallpaper.monitors."<name>"]` with `effect = "none"` →
+      only that monitor shows the plain photo
+- [ ] Switching workspaces and opening the overview doesn't flicker the wallpaper

@@ -22,4 +22,11 @@ TestCase {
     function test_points_at_the_compiled_shader() {
         verify(String(fx.fragmentShader).endsWith("shaders/halftone.frag.qsb"))
     }
+
+    function test_image_colours_switch_the_shader_mode() {
+        compare(fx.colorMode, 0)
+        fx.imageColours = true
+        compare(fx.colorMode, 1)
+        fx.imageColours = false
+    }
 }
