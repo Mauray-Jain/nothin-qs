@@ -563,3 +563,51 @@ build/nothin ipc lock lock
   - [ ] `pkexec true` → nothin's AUTHENTICATION prompt; the right password works, CANCEL
         cancels
 - [ ] Afterwards: `build/nothin kill`, then `dms run`
+
+## 1.11 Settings deck
+
+Done when: changing a setting in the UI updates the TOML and the shell.
+
+User decisions: the deck opens from a rail button, SETTINGS in the power menu, and
+`nothin ipc deck toggle`; the accent is picked from swatches or typed as hex.
+
+- `modules/deck/`: `DeckView` with HOME, LOOK and IDLE; `Deck.qml` is the window on the
+  focused monitor (Escape closes). Every control saves through `Config.set`, so the
+  daemon patches config.toml in place (comments kept) and the change applies live.
+- HOME: layout, hero clock, greeting, widgets (switching one on adds it at the end of the
+  grid order), system rows, and a screen preview: drag a widget to place it. Dropping one
+  saves `desktop.positions` (rounded to 1%) and switches to the free layout. RESET
+  PLACES clears them.
+- LOOK: accent (six swatches or `#rrggbb` + Enter), wallpaper effect, dot size and light
+  (knobs save once you stop turning), rail position, 24-hour clock.
+- IDLE: on AC and on battery, lock / screen off / suspend / off-when-locked from presets
+  (off, 1m, 2m, 3m, 5m, 10m, 15m, 30m); fade; what suspend means.
+- The config patcher can now write whole inline tables (`positions = { … }`).
+
+Decided unattended (change any of these by asking):
+- A value outside the presets (like the default 14 min battery suspend) shows nothing
+  selected but is kept until you pick a preset.
+- The swatches are Nothing red, orange, yellow, green, blue and white. The background
+  colour is config-only.
+- Dropping a widget saves the whole `positions` map. If your file uses
+  `[desktop.positions]` tables instead of the inline form, the save is refused with a
+  toast; use the inline form (the example file does).
+
+Automated: `go test ./...` (inline tables, including the empty one and keeping a trailing
+comment). `qmltestrunner`: nav, toggles, widget and system lists, drag-to-place, accent
+swatch and hex (invalid hex not saved), effect, idle presets and the "nothing selected"
+case, DeckState, Segmented with no selection.
+
+Checked in the container: screenshots of all three pages.
+
+Laptop check (**untested on hardware**):
+
+- [ ] The tune button on the rail (and SETTINGS in the power menu, and
+      `nothin ipc deck toggle`) opens the deck on the focused monitor; Escape closes it
+- [ ] Each control changes the shell within a second, and `config.toml` changes only on
+      that key; your comments stay
+- [ ] HOME: drag a widget in the preview → it moves on the real desktop; the layout
+      switches to FREE; RESET PLACES puts everything back
+- [ ] LOOK: a swatch recolours accents everywhere; typing `#00aaff` + Enter works
+- [ ] IDLE: pick 1m for lock on AC (with `--exclusive`) → it fades and locks after a
+      minute
