@@ -4,8 +4,8 @@ import "../../core"
 import "../../components"
 import "../../services"
 
-// Suspend, log out, reboot, shut down. Reboot and shut down need a second
-// press. Lock joins in phase 1.10.
+// Lock, suspend (as idle.suspend_mode says), log out, reboot, shut down.
+// Reboot and shut down need a second press.
 PopupWindow {
     id: root
 
@@ -35,7 +35,12 @@ PopupWindow {
             anchors.centerIn: parent
             spacing: 8
 
-            Pill { width: 150; text: "suspend"; onClicked: root.run(["systemctl", "suspend"]) }
+            Pill { width: 150; text: "lock"; onClicked: { root.visible = false; LockState.lock() } }
+            Pill {
+                width: 150
+                text: "suspend"
+                onClicked: root.run(["systemctl", Config.values.idle?.suspend_mode ?? "suspend"])
+            }
             Pill { width: 150; text: "log out"; onClicked: { root.visible = false; Compositor.quit() } }
             ConfirmPill { width: 150; text: "reboot"; confirmText: "reboot? again"; onConfirmed: root.run(["systemctl", "reboot"]) }
             ConfirmPill { width: 150; text: "shut down"; confirmText: "shut down? again"; onConfirmed: root.run(["systemctl", "poweroff"]) }

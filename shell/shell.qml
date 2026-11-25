@@ -10,6 +10,9 @@ import "modules/notifications"
 import "modules/osd"
 import "modules/launcher"
 import "modules/clipboard"
+import "modules/lock"
+import "modules/idle"
+import "modules/polkit"
 import "core"
 
 ShellRoot {
@@ -29,6 +32,18 @@ ShellRoot {
             OsdWindow {}
             Launcher {}
             Clipboard {}
+            Lock {}
+        }
+    }
+
+    // One per session: these wait until nothin owns the session services
+    // (always for `nothin run`; with --exclusive under --dev).
+    LazyLoader {
+        active: Config.loaded && Quickshell.env("NOTHIN_EXCLUSIVE") === "1"
+
+        Scope {
+            Idle {}
+            PolkitDialog {}
         }
     }
 }
