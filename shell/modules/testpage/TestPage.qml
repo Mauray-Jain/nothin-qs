@@ -101,7 +101,7 @@ Scope {
                         DotSpark { values: [3, 5, 4, 7, 6, 9, 5, 8, 10, 7]; anchors.verticalCenter: parent.verticalCenter }
                         Toggle { anchors.verticalCenter: parent.verticalCenter }
                         Segmented { model: ["GRID", "FREE"] }
-                        Pill { text: "caffeine"; anchors.verticalCenter: parent.verticalCenter }
+                        Pill { text: "caffeine"; anchors.verticalCenter: parent.verticalCenter; onClicked: active = !active }
                         Knob { diameter: 48 }
                     }
 
