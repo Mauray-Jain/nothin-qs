@@ -18,6 +18,7 @@ type Compositor interface {
 	// Run calls update with a fresh State after every change, until ctx ends.
 	Run(ctx context.Context, update func(State)) error
 	FocusWorkspace(id uint64) error
+	FocusWindow(id uint64) error
 	ToggleOverview() error
 	Quit() error // log out
 }

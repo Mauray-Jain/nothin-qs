@@ -14,6 +14,10 @@ func (n Niri) FocusWorkspace(id uint64) error {
 	return action(map[string]any{"FocusWorkspace": map[string]any{"reference": map[string]any{"Id": id}}})
 }
 
+func (n Niri) FocusWindow(id uint64) error {
+	return action(map[string]any{"FocusWindow": map[string]any{"id": id}})
+}
+
 func (n Niri) ToggleOverview() error {
 	return action(map[string]any{"ToggleOverview": struct{}{}})
 }

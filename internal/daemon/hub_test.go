@@ -176,7 +176,11 @@ func (f fakeWM) FocusWorkspace(id uint64) error {
 	return nil
 }
 func (f fakeWM) ToggleOverview() error { f.calls <- "overview"; return nil }
-func (f fakeWM) Quit() error           { f.calls <- "quit"; return nil }
+func (f fakeWM) FocusWindow(id uint64) error {
+	f.calls <- fmt.Sprintf("window %d", id)
+	return nil
+}
+func (f fakeWM) Quit() error { f.calls <- "quit"; return nil }
 
 func TestHubActions(t *testing.T) {
 	dir := t.TempDir()
@@ -197,12 +201,13 @@ func TestHubActions(t *testing.T) {
 		t.Fatalf("action with no compositor: %+v", m)
 	}
 
-	wm := fakeWM{calls: make(chan string, 4)}
+	wm := fakeWM{calls: make(chan string, 8)}
 	h.setWM(wm)
 	for _, tt := range []struct{ msg, want string }{
 		{`{"type":"action","action":"focus-workspace","id":3}`, "focus 3"},
 		{`{"type":"action","action":"toggle-overview"}`, "overview"},
 		{`{"type":"action","action":"quit"}`, "quit"},
+		{`{"type":"action","action":"focus-window","id":12}`, "window 12"},
 	} {
 		c.send(tt.msg)
 		select {
@@ -264,5 +269,28 @@ func TestHubPublishReplaysLatestOfEachType(t *testing.T) {
 	c2.next() // config
 	if line := c2.raw(); !strings.Contains(line, `"cpu":0.2`) || strings.Contains(line, `"cpu":0.1`) {
 		t.Fatalf("late client got %s, want only the latest", line)
+	}
+}
+
+// A launch is recorded in the state dir and the new scores are published.
+func TestHubRecordsLaunches(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", dir)
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+	c.send(`{"type":"launch","entry":"firefox.desktop"}`)
+	if line := c.raw(); !strings.Contains(line, `"type":"usage"`) || !strings.Contains(line, `"firefox.desktop":4`) {
+		t.Fatalf("after launch: %s", line)
+	}
+	if b, err := os.ReadFile(filepath.Join(dir, "nothin", "launcher.json")); err != nil || !strings.Contains(string(b), "firefox.desktop") {
+		t.Fatalf("launcher.json: %s, %v", b, err)
 	}
 }

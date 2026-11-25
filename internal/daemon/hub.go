@@ -16,6 +16,7 @@ import (
 
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
 	"github.com/Mauray-Jain/nothin-qs/internal/config"
+	"github.com/Mauray-Jain/nothin-qs/internal/usage"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -136,12 +137,32 @@ func (h *hub) action(name string, id uint64) error {
 	switch name {
 	case "focus-workspace":
 		return wm.FocusWorkspace(id)
+	case "focus-window":
+		return wm.FocusWindow(id)
 	case "toggle-overview":
 		return wm.ToggleOverview()
 	case "quit":
 		return wm.Quit()
 	}
 	return fmt.Errorf("unknown action %q", name)
+}
+
+// launch records a launcher entry being used and publishes the new scores.
+func (h *hub) launch(id string) error {
+	if id == "" {
+		return errors.New("launch: no id")
+	}
+	path := filepath.Join(StateDir(), "launcher.json")
+	s, err := usage.Load(path)
+	if err != nil {
+		s = usage.Store{} // a broken file starts over rather than blocking launches
+	}
+	s.Record(id, time.Now())
+	if err := s.Save(path); err != nil {
+		return err
+	}
+	h.publish("usage", map[string]any{"type": "usage", "scores": s.Scores(time.Now())})
+	return nil
 }
 
 func compositorMsg(st compositor.State) any {
@@ -214,6 +235,7 @@ func (h *hub) handle(c net.Conn) {
 			Value  json.RawMessage `json:"value"`
 			Action string          `json:"action"`
 			ID     uint64          `json:"id"`
+			Entry  string          `json:"entry"`
 		}
 		if json.Unmarshal(s.Bytes(), &in) != nil {
 			continue
@@ -224,6 +246,8 @@ func (h *hub) handle(c net.Conn) {
 			err = h.set(in.Path, in.Value)
 		case "action":
 			err = h.action(in.Action, in.ID)
+		case "launch":
+			err = h.launch(in.Entry)
 		}
 		if err != nil {
 			line, _ := json.Marshal(errorMsg(err.Error()))

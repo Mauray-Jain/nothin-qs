@@ -39,6 +39,8 @@ func TestActions(t *testing.T) {
 	}{
 		{"focus workspace by id", func(n Niri) error { return n.FocusWorkspace(3) },
 			`{"Action":{"FocusWorkspace":{"reference":{"Id":3}}}}`},
+		{"focus window by id", func(n Niri) error { return n.FocusWindow(12) },
+			`{"Action":{"FocusWindow":{"id":12}}}`},
 		{"toggle overview", func(n Niri) error { return n.ToggleOverview() },
 			`{"Action":{"ToggleOverview":{}}}`},
 		{"quit asks niri to confirm", func(n Niri) error { return n.Quit() },
