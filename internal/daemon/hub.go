@@ -148,6 +148,8 @@ func (h *hub) action(name string, id uint64) error {
 		return wm.ToggleOverview()
 	case "quit":
 		return wm.Quit()
+	case "power-off-monitors":
+		return wm.PowerOffMonitors()
 	}
 	return fmt.Errorf("unknown action %q", name)
 }

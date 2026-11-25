@@ -18,6 +18,11 @@ func (n Niri) FocusWindow(id uint64) error {
 	return action(map[string]any{"FocusWindow": map[string]any{"id": id}})
 }
 
+// PowerOffMonitors blanks every screen; niri turns them back on at the next input.
+func (n Niri) PowerOffMonitors() error {
+	return action(map[string]any{"PowerOffMonitors": struct{}{}})
+}
+
 func (n Niri) ToggleOverview() error {
 	return action(map[string]any{"ToggleOverview": struct{}{}})
 }

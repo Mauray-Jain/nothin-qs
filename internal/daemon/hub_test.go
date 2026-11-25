@@ -208,6 +208,7 @@ func TestHubActions(t *testing.T) {
 		{`{"type":"action","action":"toggle-overview"}`, "overview"},
 		{`{"type":"action","action":"quit"}`, "quit"},
 		{`{"type":"action","action":"focus-window","id":12}`, "window 12"},
+		{`{"type":"action","action":"power-off-monitors"}`, "monitors off"},
 	} {
 		c.send(tt.msg)
 		select {
@@ -351,3 +352,5 @@ func TestHubLockRoundTrip(t *testing.T) {
 		t.Fatal("stale lock request replayed")
 	}
 }
+
+func (f fakeWM) PowerOffMonitors() error { f.calls <- "monitors off"; return nil }

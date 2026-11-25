@@ -28,6 +28,10 @@ Socket {
                 Usage.receive(msg)
             else if (msg.type === "files")
                 FileSearch.receive(msg)
+            else if (msg.type === "lock")
+                LockState.receive(msg)
+            else if (msg.type === "inhibit")
+                IdleInhibit.receive(msg)
         }
     }
 
@@ -49,6 +53,11 @@ Socket {
     property Connections finds: Connections {
         target: FileSearch
         function onRequested(query, seq) { socket.send({ type: "find", query: query, seq: seq }) }
+    }
+
+    property Connections lockReports: Connections {
+        target: LockState
+        function onReportLocked() { socket.send({ type: "locked" }) }
     }
 
     property Connections actions: Connections {

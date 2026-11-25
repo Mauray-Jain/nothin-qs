@@ -21,6 +21,7 @@ type Compositor interface {
 	FocusWindow(id uint64) error
 	ToggleOverview() error
 	Quit() error // log out
+	PowerOffMonitors() error
 }
 
 // State is what the shell sees, the same for every compositor.
