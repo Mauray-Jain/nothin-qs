@@ -1,0 +1,14 @@
+{
+  "focused_output": "HDMI-A-1",
+  "overview": true,
+  "outputs": [],
+  "workspaces": [
+    {"id": 3, "index": 1, "name": "", "output": "HDMI-A-1", "active": true, "focused": true, "urgent": true},
+    {"id": 1, "index": 1, "name": "", "output": "eDP-1", "active": false, "focused": false, "urgent": false},
+    {"id": 2, "index": 2, "name": "web", "output": "eDP-1", "active": true, "focused": false, "urgent": false}
+  ],
+  "windows": [
+    {"id": 11, "title": "Inbox", "app_id": "thunderbird", "workspace_id": 3, "focused": true, "urgent": true},
+    {"id": 12, "title": "nothin", "app_id": "firefox", "workspace_id": 2, "focused": false, "urgent": false}
+  ]
+}
