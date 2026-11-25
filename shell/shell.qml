@@ -8,6 +8,8 @@ import "modules/wallpaper"
 import "modules/desktop"
 import "modules/notifications"
 import "modules/osd"
+import "modules/launcher"
+import "modules/clipboard"
 import "core"
 
 ShellRoot {
@@ -25,6 +27,8 @@ ShellRoot {
             Rail {}
             Notifications {}
             OsdWindow {}
+            Launcher {}
+            Clipboard {}
         }
     }
 }
