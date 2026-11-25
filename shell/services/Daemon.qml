@@ -22,6 +22,8 @@ Socket {
                 SysStats.receive(msg)
             else if (msg.type === "weather")
                 Weather.receive(msg)
+            else if (msg.type === "brightness")
+                Brightness.receive(msg)
         }
     }
 
