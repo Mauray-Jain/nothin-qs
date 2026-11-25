@@ -152,17 +152,29 @@ func (h *hub) launch(id string) error {
 	if id == "" {
 		return errors.New("launch: no id")
 	}
-	path := filepath.Join(StateDir(), "launcher.json")
-	s, err := usage.Load(path)
-	if err != nil {
-		s = usage.Store{} // a broken file starts over rather than blocking launches
-	}
+	s := loadUsage()
 	s.Record(id, time.Now())
-	if err := s.Save(path); err != nil {
+	if err := s.Save(usagePath()); err != nil {
 		return err
 	}
-	h.publish("usage", map[string]any{"type": "usage", "scores": s.Scores(time.Now())})
+	h.publishUsage(s)
 	return nil
+}
+
+func usagePath() string { return filepath.Join(StateDir(), "launcher.json") }
+
+// loadUsage reads the launch history; a broken file starts over rather than
+// blocking launches.
+func loadUsage() usage.Store {
+	s, err := usage.Load(usagePath())
+	if err != nil {
+		return usage.Store{}
+	}
+	return s
+}
+
+func (h *hub) publishUsage(s usage.Store) {
+	h.publish("usage", map[string]any{"type": "usage", "scores": s.Scores(time.Now())})
 }
 
 func compositorMsg(st compositor.State) any {

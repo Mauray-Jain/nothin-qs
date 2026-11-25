@@ -111,6 +111,7 @@ func Run(shellDir string, embedded fs.FS, dev, notifications bool, stderr io.Wri
 			fmt.Fprintln(log, "nothin: config watch:", err)
 		}
 	}()
+	h.publishUsage(loadUsage())
 	go followCompositor(ctx, h, log)
 	go sampleSystem(ctx, h)
 	go followWeather(ctx, h, log)
