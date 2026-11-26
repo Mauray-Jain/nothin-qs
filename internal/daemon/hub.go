@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor"
@@ -26,7 +27,9 @@ import (
 // Out: {"type":"config","config":{…}}, {"type":"error","error":"…"},
 // {"type":"lock"} (lock now; the shell answers {"type":"locked"}), and
 // published state: {"type":"compositor","state":{…}}, {"type":"system",…},
-// {"type":"weather",…}, {"type":"inhibit","inhibitors":[…]}. A new client
+// {"type":"weather",…}, {"type":"inhibit","inhibitors":[…]},
+// {"type":"procs","procs":[…]} (only while a shell sends
+// {"type":"procs-watch","on":true}). In also: {"type":"kill","pid","force"}. A new client
 // gets the latest published one of each type straight away.
 // In:  {"type":"set","path":"theme.accent","value":"#ffffff"} and
 //
@@ -35,21 +38,22 @@ import (
 type hub struct {
 	path string
 
-	mu      sync.Mutex
-	last    []byte                // file contents last loaded or written
-	good    config.Config         // last config that loaded
-	err     string                // current file error, "" if none
-	latest  map[string]any        // last published message of each type
-	order   []string              // types in the order first published
-	wm      compositor.Compositor // nil until detected
-	files   []string              // the home folder index for file search
-	locked  chan<- struct{}       // told when the shell reports it locked
-	clients map[net.Conn]bool
+	mu           sync.Mutex
+	last         []byte                // file contents last loaded or written
+	good         config.Config         // last config that loaded
+	err          string                // current file error, "" if none
+	latest       map[string]any        // last published message of each type
+	order        []string              // types in the order first published
+	wm           compositor.Compositor // nil until detected
+	files        []string              // the home folder index for file search
+	locked       chan<- struct{}       // told when the shell reports it locked
+	procWatchers map[net.Conn]bool     // clients that want the process list
+	clients      map[net.Conn]bool
 }
 
 // newHub loads path, writing the starter file if it doesn't exist.
 func newHub(path string) (*hub, error) {
-	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}, latest: map[string]any{}}
+	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}, latest: map[string]any{}, procWatchers: map[net.Conn]bool{}}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		b = []byte(config.Starter)
@@ -166,6 +170,29 @@ func (h *hub) requestLock() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.broadcast(map[string]any{"type": "lock"})
+}
+
+// watchingProcs reports whether any shell has the process list open.
+func (h *hub) watchingProcs() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.procWatchers) > 0
+}
+
+// killProc ends a process: SIGTERM, or SIGKILL with force. The kernel refuses
+// other users' processes, and that error goes back to the shell.
+func killProc(pid int, force bool) error {
+	if pid <= 1 {
+		return fmt.Errorf("won't end process %d", pid)
+	}
+	sig := syscall.SIGTERM
+	if force {
+		sig = syscall.SIGKILL
+	}
+	if err := syscall.Kill(pid, sig); err != nil {
+		return fmt.Errorf("end process %d: %w", pid, err)
+	}
+	return nil
 }
 
 func (h *hub) setFileIndex(idx []string) {
@@ -285,6 +312,9 @@ func (h *hub) handle(c net.Conn) {
 			Entry  string          `json:"entry"`
 			Query  string          `json:"query"`
 			Seq    int             `json:"seq"`
+			On     bool            `json:"on"`
+			PID    int             `json:"pid"`
+			Force  bool            `json:"force"`
 		}
 		if json.Unmarshal(s.Bytes(), &in) != nil {
 			continue
@@ -297,6 +327,16 @@ func (h *hub) handle(c net.Conn) {
 			err = h.action(in.Action, in.ID)
 		case "launch":
 			err = h.launch(in.Entry)
+		case "procs-watch":
+			h.mu.Lock()
+			if in.On {
+				h.procWatchers[c] = true
+			} else {
+				delete(h.procWatchers, c)
+			}
+			h.mu.Unlock()
+		case "kill":
+			err = killProc(in.PID, in.Force)
 		case "locked":
 			h.mu.Lock()
 			ch := h.locked
@@ -322,6 +362,7 @@ func (h *hub) handle(c net.Conn) {
 	}
 	h.mu.Lock()
 	delete(h.clients, c)
+	delete(h.procWatchers, c)
 	h.mu.Unlock()
 	c.Close()
 }

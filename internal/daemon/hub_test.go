@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -354,3 +355,55 @@ func TestHubLockRoundTrip(t *testing.T) {
 }
 
 func (f fakeWM) PowerOffMonitors() error { f.calls <- "monitors off"; return nil }
+
+func TestHubProcsWatchAndKill(t *testing.T) {
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+
+	if h.watchingProcs() {
+		t.Fatal("nobody asked for processes yet")
+	}
+	c.send(`{"type":"procs-watch","on":true}`)
+	waitFor := func(want bool) {
+		t.Helper()
+		for range 100 {
+			if h.watchingProcs() == want {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		t.Fatalf("watchingProcs never became %v", want)
+	}
+	waitFor(true)
+
+	child := exec.Command("sleep", "30")
+	if err := child.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- child.Wait() }()
+	c.send(fmt.Sprintf(`{"type":"kill","pid":%d}`, child.Process.Pid))
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		child.Process.Kill()
+		t.Fatal("END did not stop the process")
+	}
+
+	c.send(`{"type":"kill","pid":1}`) // not ours: the error comes back
+	if m := c.next(); m.Type != "error" {
+		t.Fatalf("killing pid 1: %+v", m)
+	}
+
+	c.conn.Close() // a shell that goes away stops the sampling
+	waitFor(false)
+}

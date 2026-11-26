@@ -21,6 +21,7 @@ import (
 	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
 	nothindbus "github.com/Mauray-Jain/nothin-qs/internal/dbus"
 	"github.com/Mauray-Jain/nothin-qs/internal/files"
+	"github.com/Mauray-Jain/nothin-qs/internal/procs"
 	"github.com/Mauray-Jain/nothin-qs/internal/sysstat"
 	"github.com/Mauray-Jain/nothin-qs/internal/weather"
 	godbus "github.com/godbus/dbus/v5"
@@ -120,6 +121,7 @@ func Run(shellDir string, embedded fs.FS, dev, exclusive bool, stderr io.Writer)
 	go followWeather(ctx, h, log)
 	go followBacklight(ctx, h)
 	go indexFiles(ctx, h)
+	go sampleProcs(ctx, h)
 	hup := make(chan os.Signal, 1)
 	signal.Notify(hup, syscall.SIGHUP)
 	restart := make(chan struct{})
@@ -287,4 +289,22 @@ func followDBus(h *hub, log io.Writer) {
 		return
 	}
 	h.setLockedChan(locked)
+}
+
+// sampleProcs publishes the process list every 2 seconds while a shell has
+// the dashboard open.
+func sampleProcs(ctx context.Context, h *hub) {
+	var s procs.Sampler
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		if h.watchingProcs() {
+			h.publish("procs", map[string]any{"type": "procs", "procs": s.Sample("/", os.Getuid())})
+		}
+	}
 }
