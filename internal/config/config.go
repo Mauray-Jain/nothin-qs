@@ -28,6 +28,12 @@ type Config struct {
 	Idle          Idle      `toml:"idle" json:"idle"`
 	Display       Display   `toml:"display" json:"display"`
 	Niri          Niri      `toml:"niri" json:"niri"`
+	Snip          Snip      `toml:"snip" json:"snip"`
+}
+
+type Snip struct {
+	Dir  string `toml:"dir" json:"dir"` // where Ctrl+S saves screenshots
+	Path string `toml:"-" json:"path"`  // Dir with ~ expanded, set by the daemon
 }
 
 type Launcher struct {
@@ -73,6 +79,7 @@ func Defaults() Config {
 			Battery: IdleTimes{Lock: 180, ScreenOff: 300, Suspend: 840, LockScreenOff: 60},
 		},
 		Display: Display{Monitors: map[string]Monitor{}},
+		Snip:    Snip{Dir: "~/Pictures/Screenshots"},
 	}
 }
 
@@ -158,5 +165,11 @@ func (c Config) validate() (path, msg string) {
 	if p, m := c.Display.validate(); p != "" {
 		return p, m
 	}
-	return c.Niri.validate()
+	if p, m := c.Niri.validate(); p != "" {
+		return p, m
+	}
+	if strings.TrimSpace(c.Snip.Dir) == "" {
+		return "snip.dir", "must be a folder"
+	}
+	return "", ""
 }

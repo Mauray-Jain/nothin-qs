@@ -95,6 +95,8 @@ func TestLoad(t *testing.T) {
 		{name: "niri speed out of range", doc: "[niri]\nmouse_speed = 2\n", wantLine: 2, wantErr: "niri.mouse_speed"},
 		{name: "niri bad accel", doc: "[niri]\nmouse_accel = \"fast\"\n", wantLine: 2, wantErr: "niri.mouse_accel"},
 		{name: "niri layout with quotes", doc: "[niri]\nkeyboard_layout = \"us\\\"\"\n", wantLine: 2, wantErr: "niri.keyboard_layout"},
+		{name: "snip defaults", doc: "", check: func(c Config) bool { return c.Snip.Dir == "~/Pictures/Screenshots" }},
+		{name: "snip dir empty", doc: "[snip]\ndir = \"\"\n", wantLine: 2, wantErr: "snip.dir"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},

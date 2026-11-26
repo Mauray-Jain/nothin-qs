@@ -435,3 +435,15 @@ func TestHubListsWallpapers(t *testing.T) {
 		t.Fatalf("reply: %s", line)
 	}
 }
+
+func TestHubResolvesSnipDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	h, err := newHub(filepath.Join(t.TempDir(), "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := h.good.Snip.Path; got != filepath.Join(home, "Pictures", "Screenshots") {
+		t.Errorf("snip path = %q", got)
+	}
+}

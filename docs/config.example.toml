@@ -128,3 +128,7 @@ monitors = {}
 # mouse_speed = 0.0             # -1 to 1
 # mouse_accel = "adaptive"      # or "flat"
 # mouse_natural_scroll = false
+
+[snip]
+# Where Ctrl+S in the screenshot annotator saves images (Enter only copies).
+dir = "~/Pictures/Screenshots"

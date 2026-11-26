@@ -92,6 +92,7 @@ func (h *hub) load(b []byte) {
 	}
 	home, _ := os.UserHomeDir()
 	c.Wallpaper.Resolve(home)
+	c.Snip.Path = config.ExpandHome(c.Snip.Dir, home)
 	h.good, h.err = c, ""
 	if h.onLoad != nil {
 		h.onLoad(c)
