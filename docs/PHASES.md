@@ -749,3 +749,43 @@ Laptop check (**untested on hardware**):
       closes it; editing config.kdl updates it
 - [ ] POWER: profile switches (with power-profiles-daemon); battery numbers look right;
       IDLE SETTINGS jumps to the IDLE page
+
+## 2.3 Wallpaper picker
+
+Done when: choosing an image and effect in the picker changes the wallpaper.
+
+User decision: a pick applies to every monitor; THIS MONITOR ONLY writes the focused
+monitor's override instead.
+
+- `nothin ipc picker toggle`, or LOOK → CHOOSE WALLPAPER (closes the deck). Opening asks
+  the daemon for `wallpaper.dir`'s images, newest first.
+- A large preview with the effect, the thumbnail strip, effect, dot-size and light
+  controls, THIS MONITOR ONLY, and APPLY. The controls only preview; nothing is saved
+  until APPLY or Enter. Left/Right move, Escape closes.
+- APPLY writes `wallpaper.file` (just the name when it's inside the folder), `effect`,
+  `dot_size` and `light`, or the same under `[wallpaper.monitors."<focused>"]`.
+
+Decided unattended (change any of these by asking):
+- The picker starts on the current wallpaper, with that monitor's effect settings.
+- The preview scales the dots to roughly how they'll look full screen.
+- Thumbnails are decoded small (280×176) to keep the strip quick.
+
+Automated: `go test ./...` (image listing, newest first, case-insensitive extensions, a
+missing folder; the hub's list reply). `qmltestrunner`: Apply.js (all monitors, this
+monitor, a file outside the folder), the picker view (start position, arrows, Enter,
+preview settings carried into the choice, thumbnail click, Escape, empty folder),
+Wallpapers.
+
+Checked in the container: a screenshot with generated images. The preview only shows
+with no effect there; dots, color and mono need a GPU.
+
+Laptop check (**untested on hardware**):
+
+- [ ] `nothin ipc picker toggle` opens the picker on the focused monitor with your
+      wallpapers, the current one selected
+- [ ] Switching DOTS/COLOR/MONO/NONE and turning the knobs changes the preview only
+- [ ] APPLY (or Enter) changes the wallpaper on every monitor and closes; config.toml has
+      `file = "<name>"` and the effect keys under `[wallpaper]`
+- [ ] With two monitors: THIS MONITOR ONLY + APPLY changes only the focused one
+      (`[wallpaper.monitors."<name>"]` appears)
+- [ ] LOOK → CHOOSE WALLPAPER opens it too
