@@ -685,3 +685,67 @@ Laptop check (**untested on hardware**):
 - [ ] The player card controls music
 - [ ] Processes update every 2 s; CPU/MEM switches the order; END twice on something
       harmless (e.g. a spare `sleep 1000` in a terminal) ends it
+
+## 2.2 Deck: DISPLAY, WINDOWS, INPUT, POWER, SHELL, cheatsheet
+
+Done when: monitors change live from DISPLAY; WINDOWS/INPUT write nothin.kdl; the
+cheatsheet shows your binds.
+
+User decisions: DISPLAY covers scale, resolution and refresh, position and rotation,
+on/off and VRR. WINDOWS covers gaps, borders, focus ring and corners; INPUT covers
+keyboard, touchpad and mouse. The cheatsheet is read-only and shows your own binds.
+POWER covers the power profile, battery info and a link to the idle settings.
+
+How it fits together:
+- DISPLAY writes `[display.monitors."<name>"]`. The daemon sends set fields to niri over
+  its socket (one `Output` request each). It does this when the settings change, when a
+  monitor is plugged in, and after niri reloads its own config, which resets live changes.
+  Monitors that are off are listed too, so they can be turned back on.
+- WINDOWS and INPUT write `[niri]`. Every key starts unset, and only keys you set go into
+  `~/.config/niri/nothin.kdl` (rewritten when `[niri]` changes, never created while
+  empty). They take effect only when your `config.kdl` ends with `include "nothin.kdl"`
+  (niri 25.11+); until then the pages are read-only and show that line. × next to a
+  setting removes it again (`null` removes a key from config.toml).
+- niri merges included sections property by property, except touchpad and mouse, which
+  an include replaces whole. So setting any touchpad option here replaces your own
+  touchpad section; the INPUT page says so.
+- The cheatsheet (`nothin ipc cheatsheet toggle`, or SHELL → SHOW CHEATSHEET) reads the
+  binds from `config.kdl` and the files it includes, with a small KDL reader in Go,
+  grouped as apps, windows, focus, move, workspaces, screenshots, session, other.
+- `nothin doctor` warns when `nothin.kdl` isn't included.
+
+Decided unattended (change any of these by asking):
+- Scale presets 1, 1.25, 1.5, 1.75, 2, plus the current scale when it's something else.
+- Rotation offers 0/90/180/270; flipped ones are config-only.
+- Dragging a monitor snaps to the others' edges within 80 logical px and saves only the
+  moved monitor's x and y.
+- WINDOWS/INPUT presets: gaps 0/4/8/12/16/24, border off/1/2/4, ring width 1/2/4/6, corners
+  0/6/12/20, repeat delay 200–800, rate 15–50, speeds −0.5…0.5 in quarters.
+- The SHELL page has name, weather place and web search; everything else is on its own page.
+
+Automated: `go test ./...` (display settings and validation; Output request JSON for every
+field, Off alone, auto mode, no refresh; richer output parsing incl. off monitors; the
+display applier's change/hotplug/reload/replug rules; `[niri]` settings and the
+commented-example check; KDL reader incl. comments and raw strings; binds and includes
+from a fixture; nothin.kdl for three fixtures, and that it parses back; writing nothin.kdl
+only when needed; removing keys; doctor's include check). `qmltestrunner`: snapping, mode
+lists, NiriConfig groups, every deck page's writes, read-only until included, clearing,
+text fields, the cheatsheet's groups, key names and error.
+
+Checked in the container: screenshots of DISPLAY, WINDOWS (read-only) and the cheatsheet.
+
+Laptop check (**untested on hardware**):
+
+- [ ] DISPLAY: scale 1.25 → applies within a second; reboot nothin → still applied;
+      `niri msg action load-config-file` (or edit config.kdl) → nothin re-applies it
+- [ ] Pick another resolution and rotation; turn VRR on (if supported)
+- [ ] With a second monitor: drag it in ARRANGE → windows/cursor cross over where it
+      snapped; turn it OFF and back ON from the page
+- [ ] WINDOWS before the include: hint shown, controls dimmed; `nothin doctor` warns
+- [ ] Add `include "nothin.kdl"` at the end of config.kdl → controls work; gaps 24 →
+      niri's gaps change; × → back to your own value; `~/.config/niri/nothin.kdl` matches
+- [ ] INPUT: keyboard layout `us,de` (+ Enter) → layout switching works; touchpad tap off
+- [ ] SHELL → SHOW CHEATSHEET (or `nothin ipc cheatsheet toggle`) lists your binds; Escape
+      closes it; editing config.kdl updates it
+- [ ] POWER: profile switches (with power-profiles-daemon); battery numbers look right;
+      IDLE SETTINGS jumps to the IDLE page
