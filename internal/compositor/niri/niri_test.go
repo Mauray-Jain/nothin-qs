@@ -43,7 +43,7 @@ func TestReplayMatchesGolden(t *testing.T) {
 
 func TestEmptySnapshotHasNoNulls(t *testing.T) {
 	b, _ := json.Marshal(newState().snapshot())
-	want := `{"focused_output":"","overview":false,"outputs":[],"workspaces":[],"windows":[]}`
+	want := `{"focused_output":"","overview":false,"config_reloads":0,"outputs":[],"workspaces":[],"windows":[]}`
 	if string(b) != want {
 		t.Errorf("got %s, want %s", b, want)
 	}
@@ -109,9 +109,12 @@ func TestParseOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []compositor.Output{ // sorted by position; DP-2 is off (no logical size)
-		{Name: "eDP-1", X: 0, Y: 0, Width: 1600, Height: 1000, Scale: 1.4},
-		{Name: "HDMI-A-1", X: 1600, Y: 0, Width: 1920, Height: 1080, Scale: 2},
+	want := []compositor.Output{ // on ones by position, then the off one (no logical size)
+		{Name: "eDP-1", Make: "BOE", Model: "0x0BCA", On: true, X: 0, Y: 0, Width: 1600, Height: 1000, Scale: 1.4,
+			Transform: "normal", Modes: []compositor.Mode{{Width: 2240, Height: 1400, Refresh: 60}}, CurrentMode: 0},
+		{Name: "HDMI-A-1", Make: "Dell", Model: "U2720Q", On: true, X: 1600, Y: 0, Width: 1920, Height: 1080, Scale: 2,
+			Transform: "normal", Modes: []compositor.Mode{{Width: 3840, Height: 2160, Refresh: 60}}, CurrentMode: 0},
+		{Name: "DP-2", Make: "x", Model: "y", Modes: []compositor.Mode{}, CurrentMode: -1},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v\nwant %+v", got, want)

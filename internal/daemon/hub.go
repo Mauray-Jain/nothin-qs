@@ -47,13 +47,15 @@ type hub struct {
 	wm           compositor.Compositor // nil until detected
 	files        []string              // the home folder index for file search
 	locked       chan<- struct{}       // told when the shell reports it locked
-	procWatchers map[net.Conn]bool     // clients that want the process list
+	procWatchers map[net.Conn]bool
+	desk         *compositor.State // latest compositor state
+	nudge        chan struct{}     // config loaded or desktop changed     // clients that want the process list
 	clients      map[net.Conn]bool
 }
 
 // newHub loads path, writing the starter file if it doesn't exist.
 func newHub(path string) (*hub, error) {
-	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}, latest: map[string]any{}, procWatchers: map[net.Conn]bool{}}
+	h := &hub{path: path, good: config.Defaults(), clients: map[net.Conn]bool{}, latest: map[string]any{}, procWatchers: map[net.Conn]bool{}, nudge: make(chan struct{}, 1)}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		b = []byte(config.Starter)
@@ -90,6 +92,15 @@ func (h *hub) load(b []byte) {
 	home, _ := os.UserHomeDir()
 	c.Wallpaper.Resolve(home)
 	h.good, h.err = c, ""
+	h.poke()
+}
+
+// poke tells the display applier something may have changed.
+func (h *hub) poke() {
+	select {
+	case h.nudge <- struct{}{}:
+	default:
+	}
 }
 
 func (h *hub) configMsg() any { return map[string]any{"type": "config", "config": h.good} }
@@ -127,7 +138,11 @@ func (h *hub) publish(typ string, msg any) {
 }
 
 func (h *hub) setCompositor(st compositor.State) {
+	h.mu.Lock()
+	h.desk = &st
+	h.mu.Unlock()
 	h.publish("compositor", compositorMsg(st))
+	h.poke()
 }
 
 func (h *hub) setWM(wm compositor.Compositor) {

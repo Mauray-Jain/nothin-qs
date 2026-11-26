@@ -173,6 +173,7 @@ func followCompositor(ctx context.Context, h *hub, log io.Writer) {
 	}
 	fmt.Fprintln(log, "nothin: compositor niri")
 	h.setWM(niri.Niri{})
+	go applyDisplays(ctx, h, niri.Niri{}, log)
 	last := ""
 	err = niri.Niri{}.Run(ctx, func(st compositor.State) {
 		h.setCompositor(st)
@@ -305,6 +306,35 @@ func sampleProcs(ctx context.Context, h *hub) {
 		}
 		if h.watchingProcs() {
 			h.publish("procs", map[string]any{"type": "procs", "procs": s.Sample("/", os.Getuid())})
+		}
+	}
+}
+
+// applyDisplays sends [display.monitors] settings to the compositor whenever
+// they, the connected monitors, or the compositor's own config change.
+func applyDisplays(ctx context.Context, h *hub, wm compositor.Compositor, log io.Writer) {
+	var a displayApplier
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-h.nudge:
+		}
+		h.mu.Lock()
+		want := h.good.Display.Monitors
+		desk := h.desk
+		h.mu.Unlock()
+		if desk == nil {
+			continue
+		}
+		var connected []string
+		for _, o := range desk.Outputs {
+			connected = append(connected, o.Name)
+		}
+		for name, m := range a.plan(want, connected, desk.ConfigReloads) {
+			if err := wm.ConfigureOutput(name, outputSettings(m)); err != nil {
+				fmt.Fprintln(log, "nothin: display:", err)
+			}
 		}
 	}
 }

@@ -22,24 +22,52 @@ type Compositor interface {
 	ToggleOverview() error
 	Quit() error // log out
 	PowerOffMonitors() error
+	// ConfigureOutput applies the settings that are set, live.
+	ConfigureOutput(name string, s OutputSettings) error
+}
+
+// OutputSettings to apply to a monitor; nil fields are left alone.
+type OutputSettings struct {
+	Enabled   *bool
+	Scale     *float64
+	Mode      *string // "2560x1440@165", "1920x1080" or "auto"
+	X, Y      *int
+	Transform *string // normal | 90 | 180 | 270 | flipped | flipped-90 | …
+	VRR       *bool
 }
 
 // State is what the shell sees, the same for every compositor.
 type State struct {
 	FocusedOutput string      `json:"focused_output"`
 	Overview      bool        `json:"overview"`
+	ConfigReloads int         `json:"config_reloads"` // times the compositor reloaded its own config
 	Outputs       []Output    `json:"outputs"`
 	Workspaces    []Workspace `json:"workspaces"` // by output, then index
 	Windows       []Window    `json:"windows"`    // by id
 }
 
+// Output is a monitor. One that is off has On false and no position or size.
 type Output struct {
-	Name   string  `json:"name"`
-	X      int     `json:"x"`
-	Y      int     `json:"y"`
-	Width  int     `json:"width"`
-	Height int     `json:"height"`
-	Scale  float64 `json:"scale"`
+	Name         string  `json:"name"`
+	Make         string  `json:"make"`
+	Model        string  `json:"model"`
+	On           bool    `json:"on"`
+	X            int     `json:"x"`
+	Y            int     `json:"y"`
+	Width        int     `json:"width"` // logical size
+	Height       int     `json:"height"`
+	Scale        float64 `json:"scale"`
+	Transform    string  `json:"transform"`
+	Modes        []Mode  `json:"modes"`
+	CurrentMode  int     `json:"current_mode"` // index into Modes, -1 if none
+	VRRSupported bool    `json:"vrr_supported"`
+	VRREnabled   bool    `json:"vrr_enabled"`
+}
+
+type Mode struct {
+	Width   int     `json:"width"`
+	Height  int     `json:"height"`
+	Refresh float64 `json:"refresh"` // Hz
 }
 
 type Workspace struct {

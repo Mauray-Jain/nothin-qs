@@ -1,6 +1,7 @@
 {
   "focused_output": "HDMI-A-1",
   "overview": true,
+  "config_reloads": 1,
   "outputs": [],
   "workspaces": [
     {"id": 3, "index": 1, "name": "", "output": "HDMI-A-1", "active": true, "focused": true, "urgent": true},

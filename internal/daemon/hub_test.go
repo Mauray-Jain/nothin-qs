@@ -407,3 +407,8 @@ func TestHubProcsWatchAndKill(t *testing.T) {
 	c.conn.Close() // a shell that goes away stops the sampling
 	waitFor(false)
 }
+
+func (f fakeWM) ConfigureOutput(name string, s compositor.OutputSettings) error {
+	f.calls <- "configure " + name
+	return nil
+}

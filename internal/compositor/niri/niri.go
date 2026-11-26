@@ -78,13 +78,24 @@ type window struct {
 }
 
 type output struct {
-	Name    string `json:"name"`
+	Name         string `json:"name"`
+	Make         string `json:"make"`
+	Model        string `json:"model"`
+	VRRSupported bool   `json:"vrr_supported"`
+	VRREnabled   bool   `json:"vrr_enabled"`
+	CurrentMode  *int   `json:"current_mode"`
+	Modes        []struct {
+		Width       int `json:"width"`
+		Height      int `json:"height"`
+		RefreshRate int `json:"refresh_rate"` // millihertz
+	} `json:"modes"`
 	Logical *struct {
-		X      int     `json:"x"`
-		Y      int     `json:"y"`
-		Width  int     `json:"width"`
-		Height int     `json:"height"`
-		Scale  float64 `json:"scale"`
+		X         int     `json:"x"`
+		Y         int     `json:"y"`
+		Width     int     `json:"width"`
+		Height    int     `json:"height"`
+		Scale     float64 `json:"scale"`
+		Transform string  `json:"transform"`
 	} `json:"logical"`
 }
 
@@ -93,6 +104,7 @@ type state struct {
 	windows    map[uint64]*window
 	outputs    []compositor.Output
 	overview   bool
+	reloads    int
 }
 
 func newState() *state {
@@ -205,6 +217,8 @@ func (s *state) applyOne(name string, body json.RawMessage) (bool, error) {
 		if w := s.windows[e.ID]; w != nil {
 			w.IsUrgent = e.Urgent
 		}
+	case "ConfigLoaded":
+		s.reloads++
 	case "OverviewOpenedOrClosed":
 		var e struct {
 			IsOpen bool `json:"is_open"`
@@ -231,10 +245,11 @@ func deref[T any](p *T) T {
 
 func (s *state) snapshot() compositor.State {
 	st := compositor.State{
-		Overview:   s.overview,
-		Outputs:    append([]compositor.Output{}, s.outputs...),
-		Workspaces: []compositor.Workspace{},
-		Windows:    []compositor.Window{},
+		Overview:      s.overview,
+		ConfigReloads: s.reloads,
+		Outputs:       append([]compositor.Output{}, s.outputs...),
+		Workspaces:    []compositor.Workspace{},
+		Windows:       []compositor.Window{},
 	}
 	for _, w := range s.workspaces {
 		st.Workspaces = append(st.Workspaces, compositor.Workspace{
@@ -262,8 +277,8 @@ func (s *state) snapshot() compositor.State {
 	return st
 }
 
-// parseOutputs reads `niri msg --json outputs`, keeping outputs that are on,
-// ordered left to right.
+// parseOutputs reads `niri msg --json outputs`: monitors that are on, left
+// to right, then those that are off (so they can be turned back on).
 func parseOutputs(b []byte) ([]compositor.Output, error) {
 	var m map[string]output
 	if err := json.Unmarshal(b, &m); err != nil {
@@ -271,17 +286,35 @@ func parseOutputs(b []byte) ([]compositor.Output, error) {
 	}
 	out := []compositor.Output{}
 	for _, o := range m {
-		if o.Logical == nil {
-			continue
+		c := compositor.Output{
+			Name: o.Name, Make: o.Make, Model: o.Model, Modes: []compositor.Mode{}, CurrentMode: -1,
+			VRRSupported: o.VRRSupported, VRREnabled: o.VRREnabled,
 		}
-		l := o.Logical
-		out = append(out, compositor.Output{Name: o.Name, X: l.X, Y: l.Y, Width: l.Width, Height: l.Height, Scale: l.Scale})
+		for _, md := range o.Modes {
+			c.Modes = append(c.Modes, compositor.Mode{Width: md.Width, Height: md.Height, Refresh: float64(md.RefreshRate) / 1000})
+		}
+		if o.CurrentMode != nil {
+			c.CurrentMode = *o.CurrentMode
+		}
+		if l := o.Logical; l != nil {
+			c.On, c.X, c.Y, c.Width, c.Height, c.Scale = true, l.X, l.Y, l.Width, l.Height, l.Scale
+			c.Transform = strings.ToLower(strings.NewReplacer("Flipped", "flipped-").Replace(l.Transform))
+			c.Transform = strings.TrimSuffix(c.Transform, "-")
+		}
+		out = append(out, c)
 	}
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].X != out[j].X {
-			return out[i].X < out[j].X
+		a, b := out[i], out[j]
+		if a.On != b.On {
+			return a.On
 		}
-		return out[i].Y < out[j].Y
+		if a.X != b.X {
+			return a.X < b.X
+		}
+		if a.Y != b.Y {
+			return a.Y < b.Y
+		}
+		return a.Name < b.Name
 	})
 	return out, nil
 }
