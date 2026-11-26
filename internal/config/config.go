@@ -27,6 +27,7 @@ type Config struct {
 	Launcher      Launcher  `toml:"launcher" json:"launcher"`
 	Idle          Idle      `toml:"idle" json:"idle"`
 	Display       Display   `toml:"display" json:"display"`
+	Niri          Niri      `toml:"niri" json:"niri"`
 }
 
 type Launcher struct {
@@ -154,5 +155,8 @@ func (c Config) validate() (path, msg string) {
 	if p, m := c.Idle.validate(); p != "" {
 		return p, m
 	}
-	return c.Display.validate()
+	if p, m := c.Display.validate(); p != "" {
+		return p, m
+	}
+	return c.Niri.validate()
 }

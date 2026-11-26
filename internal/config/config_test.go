@@ -85,6 +85,16 @@ func TestLoad(t *testing.T) {
 		{name: "mode without refresh", doc: "[display.monitors.\"DP-1\"]\nmode = \"1920x1080\"\n", check: func(c Config) bool { return true }},
 		{name: "x without y", doc: "[display.monitors.\"DP-1\"]\nx = 10\n", wantLine: 2, wantErr: "x and y"},
 		{name: "bad transform", doc: "[display.monitors.\"DP-1\"]\ntransform = \"45\"\n", wantLine: 2, wantErr: "transform"},
+		{name: "niri unset by default", doc: "", check: func(c Config) bool { return c.Niri == (Niri{}) }},
+		{name: "niri values", doc: "[niri]\ngaps = 8\nfocus_ring = false\nkeyboard_layout = \"us,de\"\ntouchpad_speed = 0.3\nmouse_accel = \"flat\"\n",
+			check: func(c Config) bool {
+				n := c.Niri
+				return *n.Gaps == 8 && !*n.FocusRing && *n.KeyboardLayout == "us,de" && *n.TouchpadSpeed == 0.3 && *n.MouseAccel == "flat" && n.BorderWidth == nil
+			}},
+		{name: "niri gaps too big", doc: "[niri]\ngaps = 500\n", wantLine: 2, wantErr: "niri.gaps"},
+		{name: "niri speed out of range", doc: "[niri]\nmouse_speed = 2\n", wantLine: 2, wantErr: "niri.mouse_speed"},
+		{name: "niri bad accel", doc: "[niri]\nmouse_accel = \"fast\"\n", wantLine: 2, wantErr: "niri.mouse_accel"},
+		{name: "niri layout with quotes", doc: "[niri]\nkeyboard_layout = \"us\\\"\"\n", wantLine: 2, wantErr: "niri.keyboard_layout"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},
@@ -178,6 +188,28 @@ func TestExampleMatchesDefaults(t *testing.T) {
 			t.Errorf("example does not set %s", strings.Join(k, "."))
 		}
 	}
+	// Optional keys (unset by default) are shown as commented examples.
+	for _, k := range optionalKeys(reflect.TypeOf(Config{}), nil) {
+		if !strings.Contains(string(doc), "# "+k[len(k)-1]+" = ") {
+			t.Errorf("example does not show %s as a commented example", strings.Join(k, "."))
+		}
+	}
+}
+
+// optionalKeys lists pointer fields of top-level sections, which have no default.
+func optionalKeys(t reflect.Type, prefix []string) [][]string {
+	var out [][]string
+	for i := range t.NumField() {
+		f := t.Field(i)
+		p := append(slices.Clone(prefix), f.Tag.Get("toml"))
+		switch {
+		case f.Type.Kind() == reflect.Struct:
+			out = append(out, optionalKeys(f.Type, p)...)
+		case f.Type.Kind() == reflect.Pointer && len(prefix) == 1:
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // keys lists the dotted path of every leaf field, from the toml tags.
@@ -185,7 +217,7 @@ func keys(t reflect.Type, prefix []string) [][]string {
 	var out [][]string
 	for i := range t.NumField() {
 		f := t.Field(i)
-		if f.Tag.Get("toml") == "-" {
+		if f.Tag.Get("toml") == "-" || f.Type.Kind() == reflect.Pointer {
 			continue
 		}
 		p := append(slices.Clone(prefix), f.Tag.Get("toml"))

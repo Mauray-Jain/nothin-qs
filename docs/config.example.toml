@@ -105,3 +105,26 @@ lock_screen_off = 60
 #   vrr = false
 #   enabled = true             # false turns the monitor off
 monitors = {}
+
+[niri]
+# Window and input settings for niri. nothin writes the ones you set (here or
+# in the deck's WINDOWS / INPUT pages) to ~/.config/niri/nothin.kdl. They only
+# take effect if your ~/.config/niri/config.kdl includes that file, at its end:
+#     include "nothin.kdl"
+# nothin never edits config.kdl. Every key is unset by default, so nothing of
+# your own niri config is overridden until you change it.
+# gaps = 16
+# border_width = 0              # 0 turns the border off
+# focus_ring = true
+# focus_ring_width = 4
+# corner_radius = 12            # rounded window corners
+# keyboard_layout = "us"        # xkb layouts, comma-separated: "us,de"
+# repeat_delay = 600            # ms before a held key repeats
+# repeat_rate = 25              # repeats per second
+# touchpad_tap = true
+# touchpad_natural_scroll = true
+# touchpad_dwt = true           # disable while typing
+# touchpad_speed = 0.0          # -1 to 1
+# mouse_speed = 0.0             # -1 to 1
+# mouse_accel = "adaptive"      # or "flat"
+# mouse_natural_scroll = false
