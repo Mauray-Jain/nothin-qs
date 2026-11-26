@@ -1,5 +1,5 @@
 import QtQuick
-import "../../components"
+import "../core"
 
 // A pill that needs two presses: the first arms it and shows confirmText,
 // the second within `timeout` ms emits confirmed.
@@ -10,6 +10,7 @@ FocusScope {
     property string confirmText
     property int timeout: 3000
     property bool armed: false
+    property color idleColor: Theme.surfaceHigh // set to Theme.surface on surfaceHigh cards
     readonly property string label: armed ? confirmText : text
     signal confirmed()
 
@@ -33,6 +34,7 @@ FocusScope {
         focus: true
         text: root.label
         active: root.armed
+        color: root.armed ? Theme.text : root.idleColor
         onClicked: root.press()
     }
 

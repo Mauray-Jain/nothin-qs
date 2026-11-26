@@ -37,7 +37,7 @@ Scope {
     Connections {
         target: Notifs
         function onArrived(n) {
-            if (!Notifs.centerOpen)
+            if (Notifs.wantsPopup())
                 root.popups = [n].concat(root.popups).slice(0, 4)
         }
     }

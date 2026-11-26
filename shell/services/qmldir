@@ -8,6 +8,7 @@ singleton IdleInhibit 1.0 IdleInhibit.qml
 singleton LockState 1.0 LockState.qml
 singleton Notifs 1.0 Notifs.qml
 singleton Osd 1.0 Osd.qml
+singleton Procs 1.0 Procs.qml
 singleton SysStats 1.0 SysStats.qml
 singleton Usage 1.0 Usage.qml
 singleton Weather 1.0 Weather.qml

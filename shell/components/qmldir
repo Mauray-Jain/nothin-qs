@@ -1,6 +1,8 @@
 Card 1.0 Card.qml
+ConfirmPill 1.0 ConfirmPill.qml
 DotBar 1.0 DotBar.qml
 DotRing 1.0 DotRing.qml
+DotSlider 1.0 DotSlider.qml
 DotSpark 1.0 DotSpark.qml
 DotText 1.0 DotText.qml
 Halftone 1.0 Halftone.qml

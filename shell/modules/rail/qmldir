@@ -1,6 +1,5 @@
 Battery 1.0 Battery.qml
 BluetoothStatus 1.0 BluetoothStatus.qml
-ConfirmPill 1.0 ConfirmPill.qml
 FocusedApp 1.0 FocusedApp.qml
 NetworkStatus 1.0 NetworkStatus.qml
 PowerMenu 1.0 PowerMenu.qml

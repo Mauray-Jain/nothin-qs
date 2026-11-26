@@ -7,6 +7,12 @@ QtObject {
     property var items: []
     property int unread: 0
     property bool centerOpen: false
+    property bool dnd: false // do not disturb: no popups (still listed in the center)
+
+    // A new notification pops up unless the center is open or DND is on.
+    function wantsPopup() {
+        return !centerOpen && !dnd
+    }
 
     signal arrived(var n) // a new one: show it as a popup
 

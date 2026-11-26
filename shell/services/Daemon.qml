@@ -32,6 +32,8 @@ Socket {
                 LockState.receive(msg)
             else if (msg.type === "inhibit")
                 IdleInhibit.receive(msg)
+            else if (msg.type === "procs")
+                Procs.receive(msg)
         }
     }
 
@@ -58,6 +60,12 @@ Socket {
     property Connections lockReports: Connections {
         target: LockState
         function onReportLocked() { socket.send({ type: "locked" }) }
+    }
+
+    property Connections procs: Connections {
+        target: Procs
+        function onWatchRequested(on) { socket.send({ type: "procs-watch", on: on }) }
+        function onEndRequested(pid, force) { socket.send({ type: "kill", pid: pid, force: force }) }
     }
 
     property Connections actions: Connections {
