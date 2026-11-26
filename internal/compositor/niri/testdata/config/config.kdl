@@ -1,0 +1,30 @@
+// A user's niri config (written for the test, in niri's syntax).
+input {
+    keyboard { xkb { layout "us"; } }
+}
+
+/-binds { Mod+Z { spawn "ignored"; } }
+
+binds {
+    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+T hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
+    Mod+D { spawn "fuzzel"; }
+    Super+Alt+L hotkey-overlay-title=null { spawn-sh "loginctl lock-session"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+"; }
+    Mod+O repeat=false { toggle-overview; }
+    Mod+Q { close-window; }
+    /* Mod+X { quit; } */
+    Mod+1 { focus-workspace 1; }
+    Mod+Shift+1 { move-column-to-workspace 1; }
+    Mod+Left  { focus-column-left; }
+    Mod+Ctrl+Left { move-column-left; }
+    Print { screenshot; }
+    Mod+Shift+E {
+        quit
+    }
+    // Mod+P { spawn "nothin" "ipc" "launcher" "toggle"; }
+}
+
+include "binds-extra.kdl"
+include optional=true "missing.kdl"
+include "~/.config/niri/nothin.kdl"
