@@ -26,6 +26,7 @@ type Config struct {
 	Weather       Weather   `toml:"weather" json:"weather"`
 	Launcher      Launcher  `toml:"launcher" json:"launcher"`
 	Idle          Idle      `toml:"idle" json:"idle"`
+	Display       Display   `toml:"display" json:"display"`
 }
 
 type Launcher struct {
@@ -70,6 +71,7 @@ func Defaults() Config {
 			AC:      IdleTimes{Lock: 300, ScreenOff: 600, Suspend: 0, LockScreenOff: 60},
 			Battery: IdleTimes{Lock: 180, ScreenOff: 300, Suspend: 840, LockScreenOff: 60},
 		},
+		Display: Display{Monitors: map[string]Monitor{}},
 	}
 }
 
@@ -149,5 +151,8 @@ func (c Config) validate() (path, msg string) {
 	if u := c.Launcher.SearchURL; !strings.Contains(u, "%s") || !(strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")) {
 		return "launcher.search_url", `must be an http(s) address with %s where the query goes`
 	}
-	return c.Idle.validate()
+	if p, m := c.Idle.validate(); p != "" {
+		return p, m
+	}
+	return c.Display.validate()
 }

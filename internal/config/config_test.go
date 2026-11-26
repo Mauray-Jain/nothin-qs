@@ -73,6 +73,18 @@ func TestLoad(t *testing.T) {
 		{name: "bad suspend mode", doc: "[idle]\nsuspend_mode = \"sleep\"\n", wantLine: 2, wantErr: "idle.suspend_mode"},
 		{name: "negative timeout", doc: "[idle.ac]\nlock = -1\n", wantLine: 2, wantErr: "idle.ac.lock"},
 		{name: "fade too long", doc: "[idle]\nfade = 120\n", wantLine: 2, wantErr: "idle.fade"},
+		{name: "display monitor", doc: "[display.monitors.\"eDP-1\"]\nscale = 2\nmode = \"2560x1440@165\"\nx = 0\ny = 0\ntransform = \"90\"\nvrr = true\n",
+			check: func(c Config) bool {
+				m := c.Display.Monitors["eDP-1"]
+				return m.Scale != nil && *m.Scale == 2 && *m.Mode == "2560x1440@165" && *m.X == 0 && *m.Transform == "90" && *m.VRR && m.Enabled == nil
+			}},
+		{name: "display defaults", doc: "", check: func(c Config) bool { return c.Display.Monitors != nil && len(c.Display.Monitors) == 0 }},
+		{name: "bad scale", doc: "[display.monitors.\"DP-1\"]\nscale = 20\n", wantLine: 2, wantErr: "display.monitors.DP-1.scale"},
+		{name: "bad mode", doc: "[display.monitors.\"DP-1\"]\nmode = \"big\"\n", wantLine: 2, wantErr: "display.monitors.DP-1.mode"},
+		{name: "auto mode", doc: "[display.monitors.\"DP-1\"]\nmode = \"auto\"\n", check: func(c Config) bool { return *c.Display.Monitors["DP-1"].Mode == "auto" }},
+		{name: "mode without refresh", doc: "[display.monitors.\"DP-1\"]\nmode = \"1920x1080\"\n", check: func(c Config) bool { return true }},
+		{name: "x without y", doc: "[display.monitors.\"DP-1\"]\nx = 10\n", wantLine: 2, wantErr: "x and y"},
+		{name: "bad transform", doc: "[display.monitors.\"DP-1\"]\ntransform = \"45\"\n", wantLine: 2, wantErr: "transform"},
 		{name: "bad rail position", doc: "[rail]\nposition = \"middle\"\n", wantLine: 2, wantErr: "rail.position"},
 		{name: "value overrides default", doc: "[general]\nname = \"ada\"\n",
 			check: func(c Config) bool { return c.General.Name == "ada" && c.Theme.Accent == "#d71921" }},

@@ -91,3 +91,17 @@ lock = 180
 screen_off = 300
 suspend = 840
 lock_screen_off = 60
+
+[display]
+# Monitor settings, applied live through niri (the DISPLAY page in the settings
+# deck writes these). Anything left out stays as niri has it. Replace the empty
+# table with sections like:
+#   [display.monitors."eDP-1"]
+#   scale = 1.5
+#   mode = "2560x1600@165"     # or "1920x1080", or "auto"
+#   x = 0                      # position in logical pixels; set x and y together
+#   y = 0
+#   transform = "normal"       # "90", "180", "270", "flipped", "flipped-90", …
+#   vrr = false
+#   enabled = true             # false turns the monitor off
+monitors = {}
