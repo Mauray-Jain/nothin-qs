@@ -829,3 +829,46 @@ Laptop check (**untested on hardware**). Needs `grim` and `wl-clipboard`.
 - [ ] Ctrl+S → `~/Pictures/Screenshots/nothin-….png` exists and is on the clipboard
 - [ ] `nothin ipc snip screen` skips the selection; Escape at any step cancels
 - [ ] On a scaled monitor (e.g. 1.5) the saved image is the monitor's full pixel size
+
+## 2.5 Matugen colours
+
+Done when: with `theme.mode = "matugen"` the accent (or the palette) follows the wallpaper.
+
+User decision: both as options: `theme.matugen = "accent"` (default: only the accent; the
+black-and-grey look stays) or `"full"` (accent plus tinted background and cards).
+
+- `[theme] mode = "mono" | "matugen"`, `matugen = "accent" | "full"`; LOOK → COLOURS and
+  TAKE FROM WALLPAPER.
+- The daemon runs `matugen image <wallpaper> --json hex --dry-run --mode dark
+  --source-color-index 0`. It retries without the index flag on versions that lack it.
+  It doesn't touch your matugen templates or set the wallpaper. It reads matugen 4.x,
+  4.x `--old-json-output` and pre-4.0 output. It runs again only when the mode or the
+  wallpaper changes.
+- Colours used (dark scheme): accent ← `primary`; with "full", background ← `surface`,
+  cards ← `surface_container`, raised cards ← `surface_container_high`.
+- If matugen is missing or fails, a toast says why and the configured colours stay.
+- Text on the accent switches to dark when the accent is light (matugen's dark-scheme
+  primaries usually are), e.g. today in the calendar.
+
+Decided unattended (change any of these by asking):
+- Always the dark scheme, and the most dominant colour (index 0).
+- With per-monitor wallpapers, colours come from the shared wallpaper.
+- Text colours stay white and greys in both scopes.
+
+Automated: `go test ./...` (parsing all three matugen JSON shapes and junk; retrying
+without the flag; matugen's error text; no wallpaper; the watcher running matugen only
+when the mode or image changes, and falling back on failure). `qmltestrunner`: Theme in
+mono, accent and full modes, the fallback, readable text on the accent, the LOOK controls.
+
+Checked in the container: a screenshot of the hero and calendar with a sample palette
+(caught white-on-light-blue in the calendar; fixed with Theme.textOnAccent, which also
+exposed that a QML property named `onAccent` silently doesn't work).
+
+Laptop check (**untested on hardware**). Needs `matugen`.
+
+- [ ] LOOK → COLOURS: FROM WALLPAPER → accents (focused workspace dot, today, toggles)
+      take the wallpaper's colour within a couple of seconds
+- [ ] TAKE FROM WALLPAPER: ACCENT + CARDS → the desktop, cards and deck take its tint
+- [ ] Pick another wallpaper → the colours follow
+- [ ] Without matugen installed: a toast says so; colours stay as configured
+- [ ] Back to MONO → the configured accent returns
