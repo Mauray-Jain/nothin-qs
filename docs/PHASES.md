@@ -634,3 +634,54 @@ nothin setup                 # everything ok, or only warnings you accept
       (`pgrep -af dms` finds nothing)
 - [ ] Notifications, idle lock and polkit prompts come from nothin
 - [ ] Rollback if needed: put the DMS line back (DMS stays installed)
+
+# Milestone 2
+
+## 2.1 Dashboard and process list
+
+Done when: the dashboard opens and its parts work; the process list shows and ends
+processes.
+
+User decisions: quick toggles, sliders, media and system stats beside the process list;
+opens from a rail button and `nothin ipc dashboard toggle`; END with confirmation.
+
+- `modules/dashboard/`: `Dashboard.qml` is a sheet sliding up from the bottom of the
+  focused monitor (Escape closes). `DashboardView` holds Wi-Fi, Bluetooth, caffeine and
+  do-not-disturb tiles, volume and brightness sliders, the player card, the system card
+  and `ProcessCard`.
+- Processes: `internal/procs` reads `/proc` (name, command, CPU share of the whole machine
+  since the last sample, resident memory, owner). The daemon samples every 2 s only while
+  a dashboard is open, and stops when that shell goes away. END (press twice) sends
+  SIGTERM to one of your own processes; after an END, FORCE (press twice) sends SIGKILL.
+  Others' processes are listed greyed, with no buttons; pid 1 is refused.
+- Do-not-disturb (`Notifs.dnd`): no popups; notifications still go to the center.
+- Caffeine moved into a `Caffeine` singleton so the rail and the dashboard share it.
+- `ConfirmPill` moved to `components/` (the rail and the dashboard both use it).
+
+Decided unattended (change any of these by asking):
+- CPU is a share of the whole machine (100% = every core busy), not per core like `top`.
+- The list shows the top 40.
+- Do-not-disturb isn't saved; it resets when nothin restarts.
+- The brightness slider never goes below 1%.
+
+Automated: `go test ./...` (sampler on two fixture snapshots, a process that exits,
+names with brackets; the hub's watch on/off and disconnect, ending a real child process,
+refusing pid 1). `qmltestrunner`: Procs sorting and requests, DND and popups,
+DotSlider (click, drag clamp, keys, owner-set value), DashboardView (tiles, DND,
+volume slider, END only on your processes with confirmation, sort switch),
+Brightness.set, Caffeine, DashboardState.
+
+Checked in the container: a screenshot of the dashboard (fixed a clipped DND label and
+invisible END pills).
+
+Laptop check (**untested on hardware**):
+
+- [ ] The dashboard button on the rail (or `nothin ipc dashboard toggle`) slides the sheet
+      up on the focused monitor; Escape or the button again closes it
+- [ ] Wi-Fi and Bluetooth tiles switch the radios; caffeine matches the rail's button
+- [ ] Do-not-disturb on → `notify-send hi` shows no popup (with `--exclusive`), but the
+      center lists it
+- [ ] Volume and brightness sliders move the real levels (and show the OSD)
+- [ ] The player card controls music
+- [ ] Processes update every 2 s; CPU/MEM switches the order; END twice on something
+      harmless (e.g. a spare `sleep 1000` in a terminal) ends it

@@ -42,4 +42,22 @@ TestCase {
         compare(Osd.kind, "brightness")
         compare(Osd.value, 0.7)
     }
+
+    function test_brightness_set_absolute() {
+        Brightness.set(0.426)
+        compare(asked.signalArguments[asked.count - 1][0], "43%")
+        Brightness.set(0)
+        compare(asked.signalArguments[asked.count - 1][0], "1%") // never fully dark
+    }
+
+    function test_caffeine_and_dashboard_state() {
+        verify(!Caffeine.on)
+        Caffeine.toggle()
+        verify(Caffeine.on)
+        Caffeine.toggle()
+        verify(!DashboardState.open)
+        DashboardState.toggle()
+        verify(DashboardState.open)
+        DashboardState.toggle()
+    }
 }

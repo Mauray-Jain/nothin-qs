@@ -12,6 +12,8 @@ QtObject {
 
     function up() { changeRequested("5%+") }
     function down() { changeRequested("5%-") }
+    // set(v) asks for an absolute level, 0..1; never fully dark.
+    function set(v) { changeRequested(Math.max(1, Math.round(v * 100)) + "%") }
 
     function receive(msg) {
         if (msg.type !== "brightness")

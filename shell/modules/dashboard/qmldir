@@ -1,3 +1,6 @@
+BluetoothSwitch 1.0 BluetoothSwitch.qml
+Dashboard 1.0 Dashboard.qml
 DashboardView 1.0 DashboardView.qml
 ProcessCard 1.0 ProcessCard.qml
 ToggleTile 1.0 ToggleTile.qml
+WifiSwitch 1.0 WifiSwitch.qml

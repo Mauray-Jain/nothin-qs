@@ -10,7 +10,6 @@ Scope {
     id: root
 
     readonly property var settings: Config.values.rail
-    property bool caffeine: false
 
     Variants {
         model: Quickshell.screens.filter(s => Config.onMonitor(root.settings.monitors, s.name))
@@ -36,7 +35,7 @@ Scope {
             implicitHeight: 40
             color: Theme.background
 
-            IdleInhibitor { window: panel; enabled: root.caffeine }
+            IdleInhibitor { window: panel; enabled: Caffeine.on }
 
             GridLayout {
                 anchors { fill: parent; margins: 4 }
@@ -77,9 +76,9 @@ Scope {
                     Layout.alignment: Qt.AlignCenter
                     rail: panel
                     icon: "coffee"
-                    active: root.caffeine
-                    tip: root.caffeine ? "caffeine on: staying awake" : "caffeine off"
-                    onClicked: root.caffeine = !root.caffeine
+                    active: Caffeine.on
+                    tip: Caffeine.on ? "caffeine on: staying awake" : "caffeine off"
+                    onClicked: Caffeine.toggle()
                 }
                 RailButton {
                     Layout.alignment: Qt.AlignCenter
@@ -88,6 +87,14 @@ Scope {
                     active: Notifs.unread > 0 || Notifs.centerOpen
                     tip: Notifs.unread > 0 ? Notifs.unread + " new" : "notifications"
                     onClicked: Notifs.toggleCenter()
+                }
+                RailButton {
+                    Layout.alignment: Qt.AlignCenter
+                    rail: panel
+                    icon: "space_dashboard"
+                    active: DashboardState.open
+                    tip: "dashboard"
+                    onClicked: DashboardState.toggle()
                 }
                 RailButton {
                     Layout.alignment: Qt.AlignCenter
