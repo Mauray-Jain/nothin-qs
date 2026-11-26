@@ -36,6 +36,8 @@ Socket {
                 Procs.receive(msg)
             else if (msg.type === "niri-config")
                 NiriConfig.receive(msg)
+            else if (msg.type === "wallpapers")
+                Wallpapers.receive(msg)
         }
     }
 
@@ -68,6 +70,11 @@ Socket {
         target: Procs
         function onWatchRequested(on) { socket.send({ type: "procs-watch", on: on }) }
         function onEndRequested(pid, force) { socket.send({ type: "kill", pid: pid, force: force }) }
+    }
+
+    property Connections wallpapers: Connections {
+        target: Wallpapers
+        function onListRequested() { socket.send({ type: "list-wallpapers" }) }
     }
 
     property Connections actions: Connections {

@@ -1,6 +1,7 @@
 import QtQuick
 import "../../core"
 import "../../components"
+import "../../services"
 
 // LOOK: accent, wallpaper effect, dots and light, rail position and clock.
 Column {
@@ -49,6 +50,10 @@ Column {
                 }
             }
         }
+    }
+    SettingRow {
+        label: "wallpaper image"
+        Pill { text: "choose wallpaper"; onClicked: { DeckState.open = false; Wallpapers.togglePicker() } }
     }
     SettingRow {
         label: "wallpaper"

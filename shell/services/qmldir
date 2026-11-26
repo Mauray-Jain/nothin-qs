@@ -15,4 +15,5 @@ singleton Osd 1.0 Osd.qml
 singleton Procs 1.0 Procs.qml
 singleton SysStats 1.0 SysStats.qml
 singleton Usage 1.0 Usage.qml
+singleton Wallpapers 1.0 Wallpapers.qml
 singleton Weather 1.0 Weather.qml

@@ -51,4 +51,17 @@ TestCase {
         FileSearch.search("")
         compare(FileSearch.results, [])
     }
+
+    SignalSpy { id: listAsked; target: Wallpapers; signalName: "listRequested" }
+
+    function test_wallpapers() {
+        Wallpapers.togglePicker()
+        verify(Wallpapers.pickerOpen)
+        compare(listAsked.count, 1) // opening asks for a fresh list
+        Wallpapers.receive({ type: "wallpapers", dir: "/w", files: ["/w/a.png"] })
+        compare(Wallpapers.files, ["/w/a.png"])
+        compare(Wallpapers.dir, "/w")
+        Wallpapers.togglePicker()
+        verify(!Wallpapers.pickerOpen)
+    }
 }

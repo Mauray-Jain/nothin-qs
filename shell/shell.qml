@@ -27,6 +27,7 @@ ShellRoot {
 
         Scope {
             Wallpaper {}
+            WallpaperPicker {}
             Desktop {}
             Toast {}
             Rail {}
