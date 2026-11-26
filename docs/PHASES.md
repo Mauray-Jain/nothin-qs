@@ -789,3 +789,43 @@ Laptop check (**untested on hardware**):
 - [ ] With two monitors: THIS MONITOR ONLY + APPLY changes only the focused one
       (`[wallpaper.monitors."<name>"]` appears)
 - [ ] LOOK → CHOOSE WALLPAPER opens it too
+
+## 2.4 Screenshot annotator
+
+Done when: a region screenshot can be annotated, copied and saved.
+
+User decisions: grim plus nothin's own region picker over a frozen screen; Enter copies,
+Ctrl+S also saves to `snip.dir` (`~/Pictures/Screenshots`).
+
+- `nothin ipc snip region`: grim captures the focused monitor first, then the capture
+  is shown full screen. Drag an area (Enter takes the whole screen, Escape cancels).
+  `nothin ipc snip screen` goes straight to the annotator.
+- Annotator: pen, arrow, box, text and blur, in accent, white or black. Keys: P A R T B
+  for the tools, Ctrl+Z undo, Enter copy, Ctrl+S save (and copy), Escape cancel. Text: click,
+  type, Enter.
+- Blur pixelates in 40-pixel blocks: the area is drawn tiny and stretched back, which
+  needs no shader and makes text unreadable.
+- The result is the captured pixels at full resolution (scaled monitors included), copied
+  with `wl-copy -t image/png`, and saved as `nothin-YYYY-MM-DD-HHMMSS.png`.
+
+Decided unattended (change any of these by asking):
+- Line width 4 px; text 22 px Space Grotesk.
+- The capture covers the whole focused monitor, including the rail.
+- Captures live in `$XDG_RUNTIME_DIR/nothin/` and the previous one is deleted on the next.
+
+Automated: `go test ./...` (`snip.dir`, its ~ expansion, doctor's grim check).
+`qmltestrunner`: geometry and file names, the region view (drag either way, a click isn't
+a selection, Enter, Escape), every tool, undo, tool and colour keys, Enter committing text
+without copying, tool keys after text (a focus bug this caught), Enter/Ctrl+S/Escape, and
+that export is full resolution.
+
+Checked in the container: a screenshot of the annotator with every kind of annotation.
+
+Laptop check (**untested on hardware**). Needs `grim` and `wl-clipboard`.
+
+- [ ] `nothin ipc snip region` freezes the focused monitor; drag an area → annotator
+- [ ] Draw with each tool; B blurs (unreadable); Ctrl+Z undoes; Enter → paste into an
+      app: the annotated image at full sharpness
+- [ ] Ctrl+S → `~/Pictures/Screenshots/nothin-….png` exists and is on the clipboard
+- [ ] `nothin ipc snip screen` skips the selection; Escape at any step cancels
+- [ ] On a scaled monitor (e.g. 1.5) the saved image is the monitor's full pixel size
