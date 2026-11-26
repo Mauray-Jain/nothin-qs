@@ -1,0 +1,12 @@
+gaps = 10
+border_width = 2
+focus_ring = false
+corner_radius = 12
+keyboard_layout = "us,de"
+repeat_delay = 400
+repeat_rate = 40
+touchpad_tap = true
+touchpad_natural_scroll = false
+touchpad_speed = 0.25
+mouse_accel = "flat"
+mouse_natural_scroll = false

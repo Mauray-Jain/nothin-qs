@@ -1,0 +1,38 @@
+// Written by nothin from [niri] in ~/.config/nothin/config.toml.
+// Changes here are overwritten; use the nothin settings deck or config.toml.
+// Include it at the end of ~/.config/niri/config.kdl:  include "nothin.kdl"
+
+layout {
+    gaps 10
+    border {
+        on
+        width 2
+    }
+    focus-ring {
+        off
+    }
+}
+
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+input {
+    keyboard {
+        xkb {
+            layout "us,de"
+        }
+        repeat-delay 400
+        repeat-rate 40
+    }
+    touchpad {
+        tap
+        natural-scroll false
+        accel-speed 0.25
+    }
+    mouse {
+        natural-scroll false
+        accel-profile "flat"
+    }
+}

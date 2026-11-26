@@ -1,0 +1,12 @@
+// Written by nothin from [niri] in ~/.config/nothin/config.toml.
+// Changes here are overwritten; use the nothin settings deck or config.toml.
+// Include it at the end of ~/.config/niri/config.kdl:  include "nothin.kdl"
+
+layout {
+    border {
+        off
+    }
+    focus-ring {
+        width 6
+    }
+}
