@@ -13,7 +13,10 @@ func TestDoctor(t *testing.T) {
 	cfg := filepath.Join(dir, "config.toml")
 	os.WriteFile(cfg, []byte("[general]\nname = \"ada\n"), 0o644) // broken on line 2
 	have := map[string]bool{"qs": true, "wl-copy": true, "systemctl": true}
+	niriCfg := filepath.Join(dir, "config.kdl")
+	os.WriteFile(niriCfg, []byte("binds { Mod+T { spawn \"kitty\"; } }\n"), 0o644)
 	env := doctorEnv{
+		niriConfig: niriCfg,
 		lookPath: func(name string) (string, error) {
 			if have[name] {
 				return "/usr/bin/" + name, nil
@@ -35,6 +38,8 @@ func TestDoctor(t *testing.T) {
 		"warn cliphist",
 		"clipboard history",
 		"warn brightnessctl",
+		"warn nothin.kdl",
+		`include "nothin.kdl"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("doctor output misses %q:\n%s", want, out)
@@ -42,6 +47,10 @@ func TestDoctor(t *testing.T) {
 	}
 
 	os.WriteFile(cfg, []byte("[general]\nname = \"ada\"\n"), 0o644)
+	os.WriteFile(niriCfg, []byte("include \"nothin.kdl\"\n"), 0o644)
+	if out, _ := doctor(env); !strings.Contains(out, "ok   nothin.kdl") {
+		t.Errorf("include not seen:\n%s", out)
+	}
 	env.getenv = func(k string) string { return map[string]string{"NIRI_SOCKET": "/run/niri.sock"}[k] }
 	if _, ok := doctor(env); !ok {
 		t.Error("only warnings left: doctor should pass")

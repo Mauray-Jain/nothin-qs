@@ -15,6 +15,7 @@ import "modules/idle"
 import "modules/polkit"
 import "modules/deck"
 import "modules/dashboard"
+import "modules/cheatsheet"
 import "core"
 
 ShellRoot {
@@ -36,6 +37,7 @@ ShellRoot {
             Lock {}
             Deck {}
             Dashboard {}
+            Cheatsheet {}
         }
     }
 

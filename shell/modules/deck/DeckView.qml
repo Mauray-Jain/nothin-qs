@@ -2,13 +2,13 @@ import QtQuick
 import "../../core"
 import "../../components"
 
-// The settings deck: HOME, LOOK and IDLE. Every change is saved to
+// The settings deck: HOME, LOOK, IDLE, DISPLAY, WINDOWS, INPUT, SHELL, POWER. Every change is saved to
 // config.toml through Config.set (comments are kept) and applies live.
 Rectangle {
     id: root
 
     property string page: "home"
-    readonly property var pages: ["home", "look", "idle"]
+    readonly property var pages: ["home", "look", "idle", "display", "windows", "input", "shell", "power"]
 
     radius: Theme.radius
     color: Theme.surface
@@ -47,11 +47,23 @@ Rectangle {
         Item {
             id: current
             width: parent.width
-            height: home.visible ? home.height : look.visible ? look.height : idle.height
+            height: children.reduce((h, c) => c.visible ? Math.max(h, c.height) : h, 0)
 
-            HomePage { id: home; width: parent.width; visible: root.page === "home" }
-            LookPage { id: look; width: parent.width; visible: root.page === "look" }
-            IdlePage { id: idle; width: parent.width; visible: root.page === "idle" }
+            HomePage { width: parent.width; visible: root.page === "home" }
+            LookPage { width: parent.width; visible: root.page === "look" }
+            IdlePage { width: parent.width; visible: root.page === "idle" }
+            DisplayPage { width: parent.width; visible: root.page === "display" }
+            WindowsPage { width: parent.width; visible: root.page === "windows" }
+            InputPage { width: parent.width; visible: root.page === "input" }
+            ShellPage { width: parent.width; visible: root.page === "shell" }
+            Loader {
+                // Needs Quickshell's UPower, so only loaded when opened.
+                width: parent.width
+                visible: root.page === "power"
+                active: visible
+                source: "PowerPage.qml"
+                onLoaded: item.deck = root
+            }
         }
     }
 }

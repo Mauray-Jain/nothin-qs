@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Mauray-Jain/nothin-qs/internal/compositor/niri"
 	"github.com/Mauray-Jain/nothin-qs/internal/config"
 	"github.com/Mauray-Jain/nothin-qs/internal/daemon"
 )
@@ -17,10 +18,11 @@ type doctorEnv struct {
 	lookPath   func(string) (string, error)
 	getenv     func(string) string
 	configPath string
+	niriConfig string
 }
 
 func realDoctorEnv() doctorEnv {
-	return doctorEnv{lookPath: exec.LookPath, getenv: os.Getenv, configPath: daemon.ConfigPath()}
+	return doctorEnv{lookPath: exec.LookPath, getenv: os.Getenv, configPath: daemon.ConfigPath(), niriConfig: niri.ConfigPath()}
 }
 
 // Helpers nothin uses; missing ones only switch off what they're for.
@@ -68,6 +70,15 @@ func doctor(env doctorEnv) (report string, ok bool) {
 		} else {
 			line("ok", "config", env.configPath)
 		}
+	}
+
+	if c, err := niri.ReadConfig(env.niriConfig); err != nil {
+		line("warn", "niri config", err.Error())
+	} else if c.IncludesNothin {
+		line("ok", "nothin.kdl", "included by "+env.niriConfig)
+	} else {
+		line("warn", "nothin.kdl", `not included: the deck's WINDOWS and INPUT pages are read-only until `+
+			env.niriConfig+` ends with  include "nothin.kdl"`)
 	}
 
 	for _, t := range optionalTools {

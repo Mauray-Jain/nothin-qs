@@ -34,6 +34,8 @@ Socket {
                 IdleInhibit.receive(msg)
             else if (msg.type === "procs")
                 Procs.receive(msg)
+            else if (msg.type === "niri-config")
+                NiriConfig.receive(msg)
         }
     }
 
