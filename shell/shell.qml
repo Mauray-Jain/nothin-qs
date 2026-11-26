@@ -16,6 +16,7 @@ import "modules/polkit"
 import "modules/deck"
 import "modules/dashboard"
 import "modules/cheatsheet"
+import "modules/snip"
 import "core"
 
 ShellRoot {
@@ -39,6 +40,7 @@ ShellRoot {
             Deck {}
             Dashboard {}
             Cheatsheet {}
+            SnipWindow {}
         }
     }
 

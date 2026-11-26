@@ -33,6 +33,7 @@ var optionalTools = []struct{ name, forWhat string }{
 	{"wl-paste", "recording clipboard history (wl-paste --watch cliphist store)"},
 	{"xdg-open", "opening files and web searches from the launcher"},
 	{"systemctl", "suspend, reboot and shut down"},
+	{"grim", "screenshots (nothin ipc snip region|screen)"},
 }
 
 // doctor checks what nothin needs. ok is false only if something it can't
