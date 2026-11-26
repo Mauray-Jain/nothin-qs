@@ -16,8 +16,14 @@ Dot-matrix type, monochrome by default, one red accent.
   `?web search`. **Clipboard** history from cliphist.
 - **Lock screen**, **idle** (fade, lock, screen off, suspend), lock before sleep, apps can
   keep the screen awake, and a **polkit** password prompt.
-- **Settings deck** for the desktop, look and idle; everything also lives in one
-  commented TOML file that nothin edits in place.
+- **Dashboard** sliding up from the bottom: quick toggles, volume and brightness,
+  media, system stats and a process list you can end processes from.
+- **Settings deck**: home, look, idle, display (live monitor scale, resolution,
+  rotation, arrangement), windows and input (written to `nothin.kdl`), shell and power.
+  Everything also lives in one commented TOML file that nothin edits in place.
+- **Wallpaper picker** with live effect previews, a **screenshot annotator** (pen,
+  arrow, box, text, blur), a **cheatsheet** of your own niri binds, and **colours from
+  your wallpaper** with matugen.
 
 ## Requirements
 
@@ -25,7 +31,9 @@ Dot-matrix type, monochrome by default, one red accent.
 - Go 1.24+ to build
 - Optional, each for one feature (`nothin doctor` tells you what's missing):
   `brightnessctl` (brightness), `cliphist` and `wl-clipboard` (clipboard history and
-  copying), `xdg-utils` (opening files and web searches), systemd (suspend, reboot).
+  copying), `xdg-utils` (opening files and web searches), systemd (suspend, reboot),
+  `grim` (screenshots), `matugen` (colours from the wallpaper),
+  `power-profiles-daemon` (the power profile switch).
 
 ## Install
 
@@ -43,6 +51,13 @@ spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 ```
 
 and restart niri.
+
+For the settings deck's WINDOWS and INPUT pages, also add this line at the **end** of
+`config.kdl` (niri 25.11 or newer). Without it those pages stay read-only:
+
+```kdl
+include "nothin.kdl"
+```
 
 ## Commands
 
