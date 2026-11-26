@@ -173,6 +173,7 @@ FocusScope {
             objectName: "picker-apply"
             text: "apply"
             color: Theme.accent
+            labelColor: Theme.textOnAccent
             onClicked: root.apply()
         }
     }

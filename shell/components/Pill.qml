@@ -7,6 +7,7 @@ Rectangle {
 
     property string text
     property bool active: false
+    property color labelColor: active ? Theme.background : Theme.text
     signal clicked()
 
     implicitWidth: label.implicitWidth + 32
@@ -22,7 +23,7 @@ Rectangle {
         id: label
         anchors.centerIn: parent
         text: root.text.toUpperCase()
-        color: root.active ? Theme.background : Theme.text
+        color: root.labelColor
         font.family: Theme.mono
         font.pixelSize: 11
         font.letterSpacing: Theme.labelSpacing

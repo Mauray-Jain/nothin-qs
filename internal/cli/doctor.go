@@ -34,6 +34,7 @@ var optionalTools = []struct{ name, forWhat string }{
 	{"xdg-open", "opening files and web searches from the launcher"},
 	{"systemctl", "suspend, reboot and shut down"},
 	{"grim", "screenshots (nothin ipc snip region|screen)"},
+	{"matugen", "colours from the wallpaper (theme.mode = \"matugen\")"},
 }
 
 // doctor checks what nothin needs. ok is false only if something it can't

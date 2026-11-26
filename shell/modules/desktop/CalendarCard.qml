@@ -63,7 +63,7 @@ Card {
                 Text {
                     anchors.centerIn: parent
                     text: parent.modelData > 0 ? parent.modelData : ""
-                    color: parent.modelData === root.today ? Theme.text : Theme.textSecondary
+                    color: parent.modelData === root.today ? Theme.textOnAccent : Theme.textSecondary
                     font.family: Theme.mono
                     font.pixelSize: 11
                 }

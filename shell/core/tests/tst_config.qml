@@ -16,7 +16,7 @@ TestCase {
     }
 
     function test_receive_config_and_error() {
-        verify(!Config.loaded)
+        Config.loaded = false // other tests may have loaded one already
         Config.receive({ type: "config", config: { general: { name: "bob" }, theme: { accent: "#00ff00", background: "#101010" } } })
         verify(Config.loaded)
         compare(Config.values.general.name, "bob")
@@ -40,5 +40,41 @@ TestCase {
         verify(Config.onMonitor(["eDP-1"], "eDP-1"))
         verify(!Config.onMonitor(["HDMI-A-1"], "eDP-1"))
         verify(Config.onMonitor(undefined, "eDP-1"))
+    }
+
+    function theme(mode, scope) {
+        Config.receive({ type: "config", config: { theme: { mode: mode, matugen: scope, accent: "#d71921", background: "#000000" } } })
+    }
+
+    function test_matugen_palette() {
+        const p = { accent: "#a8c8ff", background: "#111318", surface: "#1d2024", surface_high: "#282a2f" }
+        Matugen.receive({ type: "palette", palette: p })
+
+        theme("mono", "accent")
+        compare(Theme.accent, "#d71921")          // mono ignores the palette
+
+        theme("matugen", "accent")
+        compare(Theme.accent, "#a8c8ff")
+        compare(Theme.surface, "#0f0f0f")         // accent only: the rest stays
+
+        theme("matugen", "full")
+        compare(Theme.background, "#111318")
+        compare(Theme.surface, "#1d2024")
+        compare(Theme.surfaceHigh, "#282a2f")
+
+        Matugen.receive({ type: "palette", palette: null })   // matugen failed
+        compare(Theme.accent, "#d71921")
+        compare(Theme.background, "#000000")
+        theme("mono", "accent")
+    }
+
+    function test_text_on_accent_stays_readable() {
+        theme("mono", "accent")
+        compare(Theme.textOnAccent, Theme.text)            // white on Nothing red
+        Matugen.receive({ type: "palette", palette: { accent: "#a8c8ff", background: "#111318", surface: "#1d2024", surface_high: "#282a2f" } })
+        theme("matugen", "accent")
+        compare(Theme.textOnAccent, Theme.background)      // dark on light blue
+        Matugen.receive({ type: "palette", palette: null })
+        theme("mono", "accent")
     }
 }

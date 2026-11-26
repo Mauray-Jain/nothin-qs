@@ -79,6 +79,14 @@ Item {
             compare(lastSet()[1], "#123abc")
         }
 
+        function test_look_theme_mode() {
+            deck.page = "look"
+            findChild(deck, "segment-theme.mode").activated(1)
+            compare(lastSet()[0], "theme.mode")
+            compare(lastSet()[1], "matugen")
+            verify(!findChild(deck, "segment-theme.matugen").visible) // only in matugen mode
+        }
+
         function test_look_effect() {
             deck.page = "look"
             const seg = findChild(deck, "segment-wallpaper.effect")

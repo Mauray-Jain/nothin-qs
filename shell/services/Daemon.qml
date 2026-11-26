@@ -38,6 +38,8 @@ Socket {
                 NiriConfig.receive(msg)
             else if (msg.type === "wallpapers")
                 Wallpapers.receive(msg)
+            else if (msg.type === "palette")
+                Matugen.receive(msg)
         }
     }
 

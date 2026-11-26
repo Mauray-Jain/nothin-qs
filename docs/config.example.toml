@@ -14,6 +14,12 @@ name = ""
 compositor = "auto"
 
 [theme]
+# "mono": the colours below. "matugen": colours taken from the wallpaper by the
+# matugen tool (it must be installed), falling back to these if it fails.
+mode = "mono"
+# What matugen mode takes from the wallpaper: "accent" only (the Nothing look
+# stays black and grey), or "full" (accent plus tinted background and cards).
+matugen = "accent"
 # Used only for active dots, play, errors and pen ink.
 accent = "#d71921"
 background = "#000000"

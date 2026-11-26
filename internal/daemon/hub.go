@@ -48,9 +48,9 @@ type hub struct {
 	files        []string              // the home folder index for file search
 	locked       chan<- struct{}       // told when the shell reports it locked
 	procWatchers map[net.Conn]bool
-	desk         *compositor.State   // latest compositor state
-	nudge        chan struct{}       // config loaded or desktop changed
-	onLoad       func(config.Config) // called with each config that loads     // clients that want the process list
+	desk         *compositor.State     // latest compositor state
+	nudge        chan struct{}         // config loaded or desktop changed
+	onLoad       []func(config.Config) // called with each config that loads     // clients that want the process list
 	clients      map[net.Conn]bool
 }
 
@@ -94,17 +94,18 @@ func (h *hub) load(b []byte) {
 	c.Wallpaper.Resolve(home)
 	c.Snip.Path = config.ExpandHome(c.Snip.Dir, home)
 	h.good, h.err = c, ""
-	if h.onLoad != nil {
-		h.onLoad(c)
+	for _, f := range h.onLoad {
+		f(c)
 	}
 	h.poke()
 }
 
-// setOnLoad sets a hook for each config that loads, and runs it once now.
-func (h *hub) setOnLoad(f func(config.Config)) {
+// addOnLoad adds a hook for each config that loads, and runs it once now.
+// Hooks run under the hub's lock, so they must be quick.
+func (h *hub) addOnLoad(f func(config.Config)) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.onLoad = f
+	h.onLoad = append(h.onLoad, f)
 	f(h.good)
 }
 

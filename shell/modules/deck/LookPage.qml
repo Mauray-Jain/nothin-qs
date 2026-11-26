@@ -14,6 +14,23 @@ Column {
     spacing: 4
 
     SettingRow {
+        label: "colours"
+        SettingSegmented {
+            path: "theme.mode"
+            model: ["mono", "from wallpaper"]; values: ["mono", "matugen"]
+            value: Config.values.theme?.mode ?? "mono"
+        }
+    }
+    SettingRow {
+        visible: Config.values.theme?.mode === "matugen"
+        label: "take from wallpaper"
+        SettingSegmented {
+            path: "theme.matugen"
+            model: ["accent", "accent + cards"]; values: ["accent", "full"]
+            value: Config.values.theme?.matugen ?? "accent"
+        }
+    }
+    SettingRow {
         label: "accent"
         Row {
             spacing: 10

@@ -1,0 +1,8 @@
+{
+  "colors": {
+    "primary": { "dark": "#ffb4a9", "light": "#9c4235", "default": "#ffb4a9" },
+    "surface": { "dark": "#1a1110", "light": "#fff8f6", "default": "#1a1110" },
+    "surface_container": { "dark": "#271d1b", "light": "#fceae7", "default": "#271d1b" },
+    "surface_container_high": { "dark": "#322826", "light": "#f6e4e1", "default": "#322826" }
+  }
+}

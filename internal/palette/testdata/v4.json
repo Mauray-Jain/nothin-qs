@@ -1,0 +1,10 @@
+{
+  "colors": {
+    "primary": { "dark": { "color": "#a8c8ff" }, "light": { "color": "#3a5f94" }, "default": { "color": "#a8c8ff" } },
+    "surface": { "dark": { "color": "#111318" }, "light": { "color": "#f9f9ff" }, "default": { "color": "#111318" } },
+    "surface_container": { "dark": { "color": "#1d2024" }, "light": { "color": "#ededf4" }, "default": { "color": "#1d2024" } },
+    "surface_container_high": { "dark": { "color": "#282a2f" }, "light": { "color": "#e7e8ee" }, "default": { "color": "#282a2f" } }
+  },
+  "palettes": { "primary": { "50": { "color": "#4d76b0" } } },
+  "mode": "dark"
+}

@@ -51,7 +51,7 @@ func followNiriConfig(ctx context.Context, h *hub, log io.Writer) {
 		h.publish("niri-config", msg)
 	}
 
-	h.setOnLoad(func(c config.Config) {
+	h.addOnLoad(func(c config.Config) {
 		if err := writeNothinKDL(niri.KDLPath(path), c.Niri); err != nil {
 			fmt.Fprintln(log, "nothin: nothin.kdl:", err)
 		}

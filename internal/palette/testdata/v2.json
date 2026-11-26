@@ -1,0 +1,6 @@
+{
+  "colors": {
+    "dark": { "primary": "#b5d36a", "surface": "#13140d", "surface_container": "#1f2018", "surface_container_high": "#2a2b22" },
+    "light": { "primary": "#4f6600", "surface": "#fbfaed", "surface_container": "#efefe1", "surface_container_high": "#e9e9db" }
+  }
+}

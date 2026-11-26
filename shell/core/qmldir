@@ -1,2 +1,3 @@
 singleton Config 1.0 Config.qml
+singleton Matugen 1.0 Matugen.qml
 singleton Theme 1.0 Theme.qml

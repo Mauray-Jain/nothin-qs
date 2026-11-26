@@ -46,6 +46,8 @@ type General struct {
 }
 
 type Theme struct {
+	Mode       string `toml:"mode" json:"mode"`       // mono | matugen
+	Matugen    string `toml:"matugen" json:"matugen"` // accent | full: what matugen mode takes from the wallpaper
 	Accent     string `toml:"accent" json:"accent"`
 	Background string `toml:"background" json:"background"`
 }
@@ -60,7 +62,7 @@ func Defaults() Config {
 	return Config{
 		ConfigVersion: Version,
 		General:       General{Compositor: "auto"},
-		Theme:         Theme{Accent: "#d71921", Background: "#000000"},
+		Theme:         Theme{Mode: "mono", Matugen: "accent", Accent: "#d71921", Background: "#000000"},
 		Rail:          Rail{Position: "left", Monitors: []string{}, Clock24h: true},
 		Wallpaper: Wallpaper{
 			Dir: "~/Pictures/Wallpapers", Effect: "dots", DotSize: 17, Light: 50,
@@ -143,6 +145,10 @@ func (c Config) validate() (path, msg string) {
 		return "config_version", fmt.Sprintf("%d is newer than this nothin understands (%d); update nothin", c.ConfigVersion, Version)
 	case c.General.Compositor != "auto" && c.General.Compositor != "niri":
 		return "general.compositor", `must be "auto" or "niri"`
+	case c.Theme.Mode != "mono" && c.Theme.Mode != "matugen":
+		return "theme.mode", `must be "mono" or "matugen"`
+	case c.Theme.Matugen != "accent" && c.Theme.Matugen != "full":
+		return "theme.matugen", `must be "accent" or "full"`
 	case !hexColour.MatchString(c.Theme.Accent):
 		return "theme.accent", `must be a colour like "#d71921"`
 	case !hexColour.MatchString(c.Theme.Background):
