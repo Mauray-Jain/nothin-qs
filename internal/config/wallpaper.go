@@ -105,23 +105,40 @@ func expand(p, home string) string {
 var imageExts = []string{".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 func newestImage(dir string) string {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return ""
+	if list := listImages(dir); len(list) > 0 {
+		return list[0]
 	}
-	var best string
-	var bestTime time.Time
+	return ""
+}
+
+// ExpandHome turns a leading ~ into home.
+func ExpandHome(p, home string) string { return expand(p, home) }
+
+// ListImages lists the images in dir (with ~ for home), newest first. A
+// missing folder gives an empty list.
+func ListImages(dir, home string) []string {
+	return listImages(expand(dir, home))
+}
+
+func listImages(dir string) []string {
+	type img struct {
+		path string
+		mod  time.Time
+	}
+	var imgs []img
+	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {
 		if e.IsDir() || !slices.Contains(imageExts, strings.ToLower(filepath.Ext(e.Name()))) {
 			continue
 		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
-		if best == "" || info.ModTime().After(bestTime) {
-			best, bestTime = filepath.Join(dir, e.Name()), info.ModTime()
+		if info, err := e.Info(); err == nil {
+			imgs = append(imgs, img{filepath.Join(dir, e.Name()), info.ModTime()})
 		}
 	}
-	return best
+	sort.SliceStable(imgs, func(i, j int) bool { return imgs[i].mod.After(imgs[j].mod) })
+	out := make([]string, len(imgs))
+	for i, m := range imgs {
+		out[i] = m.path
+	}
+	return out
 }

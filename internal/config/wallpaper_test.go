@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -56,5 +57,25 @@ func TestResolveWallpaper(t *testing.T) {
 	}
 	if got := w.Monitors["HDMI-A-1"].Path; got != "" {
 		t.Errorf("HDMI-A-1 should inherit (empty Path), got %q", got)
+	}
+}
+
+func TestListImages(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, "w")
+	os.MkdirAll(filepath.Join(dir, "sub.jpg"), 0o755)
+	for i, name := range []string{"a.png", "b.JPG", "notes.txt", "c.webp"} {
+		p := filepath.Join(dir, name)
+		os.WriteFile(p, []byte("x"), 0o644)
+		when := time.Now().Add(-time.Duration(10-i) * time.Hour)
+		os.Chtimes(p, when, when)
+	}
+	got := ListImages("~/w", home)
+	want := []string{filepath.Join(dir, "c.webp"), filepath.Join(dir, "b.JPG"), filepath.Join(dir, "a.png")}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v\nwant %v", got, want)
+	}
+	if got := ListImages("~/missing", home); got == nil || len(got) != 0 {
+		t.Errorf("missing dir: %#v, want an empty list", got)
 	}
 }

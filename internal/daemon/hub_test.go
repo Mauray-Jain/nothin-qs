@@ -412,3 +412,26 @@ func (f fakeWM) ConfigureOutput(name string, s compositor.OutputSettings) error 
 	f.calls <- "configure " + name
 	return nil
 }
+
+func TestHubListsWallpapers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	os.MkdirAll(filepath.Join(home, "Pictures", "Wallpapers"), 0o755)
+	os.WriteFile(filepath.Join(home, "Pictures", "Wallpapers", "one.png"), []byte("x"), 0o644)
+	dir := t.TempDir()
+	h, err := newHub(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sock := filepath.Join(dir, "s.sock")
+	ln, _ := net.Listen("unix", sock)
+	defer ln.Close()
+	go h.serve(ln)
+	c := dial(t, sock)
+	c.next() // config
+	c.send(`{"type":"list-wallpapers"}`)
+	line := c.raw()
+	if !strings.Contains(line, `"type":"wallpapers"`) || !strings.Contains(line, "one.png") || !strings.Contains(line, `"dir":"`+filepath.Join(home, "Pictures", "Wallpapers")) {
+		t.Fatalf("reply: %s", line)
+	}
+}

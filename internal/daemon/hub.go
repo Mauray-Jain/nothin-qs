@@ -374,6 +374,16 @@ func (h *hub) handle(c net.Conn) {
 				default:
 				}
 			}
+		case "list-wallpapers":
+			h.mu.Lock()
+			wdir := h.good.Wallpaper.Dir
+			h.mu.Unlock()
+			home, _ := os.UserHomeDir()
+			line, _ := json.Marshal(map[string]any{"type": "wallpapers",
+				"dir": config.ExpandHome(wdir, home), "files": config.ListImages(wdir, home)})
+			h.mu.Lock()
+			c.Write(append(line, '\n'))
+			h.mu.Unlock()
 		case "find":
 			line, _ := json.Marshal(h.find(in.Query, in.Seq))
 			h.mu.Lock()
