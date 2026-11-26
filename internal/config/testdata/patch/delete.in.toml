@@ -1,0 +1,4 @@
+# set niri.gaps null
+[niri]
+gaps = 8 # mine
+border_width = 2

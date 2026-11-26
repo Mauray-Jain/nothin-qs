@@ -13,11 +13,15 @@ import (
 )
 
 // Patch sets the key at the dotted path to a JSON value, editing doc in place
-// so comments, order and formatting elsewhere survive. It refuses to touch a
+// so comments, order and formatting elsewhere survive. A null value removes
+// the key, so it falls back to its default. It refuses to touch a
 // document that doesn't load, and refuses a result that doesn't load.
 func Patch(doc []byte, path string, value []byte) ([]byte, error) {
 	if _, err := Load(doc); err != nil {
 		return nil, fmt.Errorf("config.toml has an error, fix it before saving: %w", err)
+	}
+	if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+		return unset(doc, path)
 	}
 	val, err := encode(value)
 	if err != nil {
@@ -51,6 +55,20 @@ func Patch(doc []byte, path string, value []byte) ([]byte, error) {
 			out = splice(doc, at, at, line)
 		}
 	}
+	if _, err := Load(out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// unset removes the key's whole line, so it falls back to its default.
+func unset(doc []byte, path string) ([]byte, error) {
+	kv := find(doc, strings.Split(path, "."))
+	if kv == nil {
+		return doc, nil
+	}
+	start := bytes.LastIndexByte(doc[:kv.start], '\n') + 1
+	out := splice(doc, start, lineEnd(doc, kv.start), nil)
 	if _, err := Load(out); err != nil {
 		return nil, err
 	}

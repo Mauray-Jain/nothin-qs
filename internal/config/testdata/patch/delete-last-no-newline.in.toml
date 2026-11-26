@@ -1,0 +1,3 @@
+# set niri.gaps null
+[niri]
+gaps = 8
